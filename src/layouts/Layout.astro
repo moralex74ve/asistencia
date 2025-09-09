@@ -1,0 +1,19 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import "../styles/global.css";
+import { SITE_TITLE, SITE_DESCRIPTION } from "../const";
+import BaseHead from "../components/BaseHead.astro";
+
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+    <ClientRouter />
+  </head>
+  <body class="container mx-auto bg-zinc-800 max-w-screen-l">
+    <slot />
+  </body>
+</html>
+

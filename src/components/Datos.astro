@@ -1,0 +1,210 @@
+---
+import { prisma } from "../db";
+
+// Fetch both members and all available zones in parallel
+const [miembros, zonas] = await Promise.all([
+  prisma.miembros.findMany({
+    include: {
+      zonas: true, // Include related zone data for display
+    },
+    orderBy: {
+      nombre: 'asc'
+    }
+  }),
+  prisma.zonas.findMany({
+    where: {
+      miembros: {
+        some: {}, // Only fetch zones that have at least one member
+      },
+    },
+    orderBy: {
+      nombre_zona: 'asc'
+    }
+  })
+]);
+---
+
+<div class="mb-4 flex flex-col sm:flex-row flex-wrap items-center justify-between gap-4">
+  <!-- Search and Add Button -->
+  <div class="flex items-center gap-4 w-full sm:w-auto">
+    <div class="relative flex-grow">
+      <input type="text" id="filter-input" placeholder="Buscar..." class="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900">
+      <button id="clear-filter-btn" class="absolute inset-y-0 right-0 items-center pr-3 hidden" aria-label="Limpiar búsqueda">
+        <svg class="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <a href="/crear" class="inline-block rounded bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 whitespace-nowrap">
+      Agregar Miembro
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+    <div class="flex items-center">
+      <input id="status-filter-checkbox" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+      <label for="status-filter-checkbox" class="ml-2 text-sm font-medium text-slate-50">Mostrar inactivos</label>
+    </div>
+
+    <select id="zona-filter-select" class="w-full sm:max-w-xs block pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 text-sm">
+      <option value="all">Todas las zonas</option>
+      {zonas.map(zona => (
+        <option value={zona.id}>{zona.nombre_zona}</option>
+      ))}
+    </select>
+  </div>
+
+  <!-- Counter -->
+  <div class="hidden sm:block text-sm">
+    <span id="record-counter-label" class="text-slate-50 font-medium">Registros:</span>
+    <span id="record-counter-value" class="font-bold text-slate-50">{miembros.length}</span>
+  </div>
+</div>
+
+<div class="overflow-x-auto rounded-lg border border-gray-200 shadow-md">
+  <table class="table-fixed min-w-full divide-y-2 divide-gray-200 bg-white text-sm">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-left">Nombre y Apellido</th>
+        <th class="whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-left">Cédula</th>
+        <th class="whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-left">Teléfono</th>
+        <th class="whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-left">Status</th>
+        <th class="whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-left">Zona</th>
+        <th class="whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-left">Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="miembros-table-body" class="divide-y divide-gray-200">
+      {miembros.map((miembro) => (
+        <tr data-miembro-id={miembro.id} data-status={miembro.status ? 'activo' : 'inactivo'} data-zona-id={miembro.zona_id}>
+          <td class="whitespace-nowrap px-4 py-2 font-medium text-gray-900">{miembro.nombre} {miembro.apellido}</td>
+          <td class="whitespace-nowrap px-4 py-2 text-gray-700">{miembro.cedula}</td>
+          <td class="whitespace-nowrap px-4 py-2 text-gray-700">{miembro.telef || 'N/A'}</td>
+          <td class="whitespace-nowrap px-4 py-2 text-gray-700">
+            <span class:list={[
+                "px-2 py-1 rounded-full text-xs font-semibold",
+                miembro.status ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800",
+            ]}>
+              {miembro.status ? 'Activo' : 'Inactivo'}
+            </span>
+          </td>
+          <td class="whitespace-nowrap px-4 py-2 text-gray-700">{miembro.zonas.nombre_zona}</td>
+          <td class="whitespace-nowrap px-4 py-2">
+            <div class="flex items-center gap-2">
+                <a href={`/editar/${miembro.id}`} class="inline-block rounded bg-yellow-500 px-3 py-1 text-xs font-medium text-white hover:bg-yellow-600">Editar</a>
+                <button data-id={miembro.id} class="delete-btn inline-block rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700">Eliminar</button>
+            </div>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<script>
+  function initializePage() {
+    // Get all interactive elements
+    const filterInput = document.getElementById('filter-input') as HTMLInputElement;
+    const clearFilterBtn = document.getElementById('clear-filter-btn') as HTMLButtonElement;
+    const statusCheckbox = document.getElementById('status-filter-checkbox') as HTMLInputElement;
+    const zonaSelect = document.getElementById('zona-filter-select') as HTMLSelectElement;
+    const tableBody = document.getElementById('miembros-table-body') as HTMLTableSectionElement;
+    const recordCounterLabel = document.getElementById('record-counter-label') as HTMLSpanElement;
+    const recordCounterValue = document.getElementById('record-counter-value') as HTMLSpanElement;
+
+    if (!filterInput || !tableBody || !clearFilterBtn || !statusCheckbox || !zonaSelect) {
+      return; // Exit if elements are not on the page
+    }
+
+    const allRows = Array.from(tableBody.getElementsByTagName('tr'));
+    const totalRecords = allRows.length;
+
+    function updateCounter(visibleRows: number) {
+      recordCounterLabel.textContent = 'Mostrando:';
+      recordCounterValue.textContent = `${visibleRows} de ${totalRecords}`;
+    }
+
+    function applyFilters() {
+      const searchTerm = filterInput.value.toLowerCase();
+      const showInactive = statusCheckbox.checked;
+      const selectedZona = zonaSelect.value;
+      let visibleRows = 0;
+
+      for (const row of allRows) {
+        const rowStatus = row.dataset.status;
+        const rowZonaId = row.dataset.zonaId;
+        const nameCell = row.cells[0];
+        const cedulaCell = row.cells[1];
+
+        // Conditions for visibility
+        const matchesStatus = showInactive || rowStatus === 'activo';
+        const matchesZona = selectedZona === 'all' || rowZonaId === selectedZona;
+        const matchesSearch = !searchTerm || 
+                              (nameCell?.textContent?.toLowerCase().includes(searchTerm) || 
+                               cedulaCell?.textContent?.toLowerCase().includes(searchTerm));
+
+        if (matchesStatus && matchesZona && matchesSearch) {
+          row.style.display = '';
+          visibleRows++;
+        } else {
+          row.style.display = 'none';
+        }
+      }
+      updateCounter(visibleRows);
+    }
+
+    function handleSearchInput() {
+      applyFilters();
+      if (filterInput.value) {
+        clearFilterBtn.classList.remove('hidden');
+      } else {
+        clearFilterBtn.classList.add('hidden');
+      }
+    }
+
+    function clearSearchInput() {
+      filterInput.value = '';
+      applyFilters();
+      clearFilterBtn.classList.add('hidden');
+      filterInput.focus();
+    }
+
+    async function handleTableClick(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains('delete-btn')) {
+        const id = target.dataset.id;
+        if (id && confirm('¿Estás seguro de que quieres eliminar este registro?')) {
+          try {
+            const response = await fetch(`/api/miembros/${id}`, { method: 'DELETE' });
+            if (response.ok) {
+              target.closest('tr')?.remove();
+              initializePage(); // Re-initialize to update rows array and counts
+            } else {
+              const error = await response.json();
+              alert(`Error al eliminar: ${error.message || response.statusText}`);
+            }
+          } catch (error) {
+            alert(`Error de red: ${(error as Error).message}`);
+          }
+        }
+      }
+    }
+
+    // Attach listeners only once
+    if (!filterInput.dataset.initialized) {
+      filterInput.addEventListener('input', handleSearchInput);
+      clearFilterBtn.addEventListener('click', clearSearchInput);
+      statusCheckbox.addEventListener('change', applyFilters);
+      zonaSelect.addEventListener('change', applyFilters);
+      tableBody.addEventListener('click', handleTableClick);
+      filterInput.dataset.initialized = 'true';
+    }
+
+    // Initial UI setup on every load
+    applyFilters();
+    handleSearchInput();
+  }
+
+  // Listen for Astro's client-side navigation event
+  document.addEventListener('astro:page-load', initializePage);
+</script>

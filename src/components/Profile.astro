@@ -1,0 +1,28 @@
+---
+import SocialLinks from "./SocialLinks.astro";
+import { userData } from "../data/userData.js";
+import ThemeIcon from "./ThemeIcon.astro";
+---
+<div class="mt-0 w-full h-[22dvh] rounded-lg shadow-lg overflow-hidden">
+  <div class="w-full h-full bg-center bg-no-repeat bg-[length:160%]" style="background-image: url('/img/bannerYT.png')"></div>
+</div> 
+
+<ThemeIcon />
+
+<div class=" z-50 -mt-28 rounded-full border-3 border-[--border-color] dark:border-blue-400 w-40 h-40 overflow-hidden mb-4">
+  <img class="dark:border-2 dark:border-blue-400" src={userData[0].userPic} alt={userData[0].userName} />
+</div>
+{
+  userData.map((data) => (
+    <>
+      <h1 class="text-3xl font-semibold bg-gradient-to-r from-blue-600 to-[#8426ff] bg-clip-text text-transparent dark:from-cyan-400 dark:to-[#8426ff]">
+        {data.userName}
+      </h1>
+      <p class="text-xl font-semibold text-[#8426ff] text-center">{data.userDesc}</p>
+    </>
+  ))
+}
+<SocialLinks />
+
+
+

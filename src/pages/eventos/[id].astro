@@ -1,0 +1,437 @@
+---
+// src/pages/eventos/[id].astro
+
+export const prerender = false;
+import Layout from "../../layouts/Layout.astro";
+import { prisma } from "../../db";
+
+const { id: eventoId } = Astro.params;
+
+if (!eventoId) {
+  return new Response("No se proporcionó un ID de evento", { status: 400 });
+}
+
+// Handle adding new members to the attendance list
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const miembroIdsToAdd = formData
+    .getAll("miembroIds")
+    .map((id) => id.toString());
+
+  if (miembroIdsToAdd.length > 0) {
+    try {
+      await prisma.asistencia.createMany({
+        data: miembroIdsToAdd.map((miembroId) => ({
+          evento_id: eventoId,
+          miembro_id: miembroId,
+          presente: false,
+        })),
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      console.error("Error al agregar miembros a la asistencia:", error);
+    }
+  }
+  return Astro.redirect(`/eventos/${eventoId}`);
+}
+
+// Fetch event details, members already in attendance (with names), and all zones
+const [evento, miembrosEnAsistencia, todasZonas] = await Promise.all([
+  prisma.evento.findUnique({ where: { id: eventoId } }),
+  prisma.asistencia.findMany({
+    where: { evento_id: eventoId },
+    include: {
+      miembros: {
+        select: {
+          nombre: true,
+          apellido: true,
+        },
+      },
+    },
+    orderBy: {
+      miembros: {
+        nombre: "asc",
+      },
+    },
+  }),
+  prisma.zonas.findMany({ orderBy: { nombre_zona: "asc" } }),
+]);
+
+if (!evento) {
+  return new Response("Evento no encontrado", { status: 404 });
+}
+
+const idsMiembrosEnAsistencia = miembrosEnAsistencia.map((a) => a.miembro_id);
+
+// Fetch all members that are NOT already in the attendance list
+const miembros = await prisma.miembros.findMany({
+  where: {
+    id: {
+      notIn: idsMiembrosEnAsistencia,
+    },
+  },
+  include: {
+    zonas: true,
+  },
+  orderBy: { nombre: "asc" },
+});
+
+const zonaIdsEnLista = [...new Set(miembros.map((m) => m.zona_id))];
+const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
+---
+
+<Layout title={`Agregar Miembros a ${evento.nombre}`}>
+  <div class="container mx-auto px-4 py-2 text-slate-50">
+    <a href="/eventos" class="text-blue-400 hover:underline mb-4 inline-block"
+      >&larr; Volver a todos los eventos</a
+    >
+    <h1 class="sm:text-xs lg:text-4xl font-bold">{evento.nombre}</h1>
+    <p class="sm:text-xs lg:text-lg text-gray-400 mb-2">
+      {
+        new Date(evento.fecha).toLocaleDateString("es-ES", {
+          timeZone: "UTC",
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+      }
+    </p>
+
+    <div class="text-md text-gray-300 mb-6 flex items-center gap-3">
+      <span class="sm:text-xs lg:text-lg font-semibold"
+        >Miembros en este evento:</span
+      >
+      <span
+        class="bg-blue-900 text-blue-200 text-sm font-bold px-2.5 py-0.5 rounded-full"
+        >{miembrosEnAsistencia.length}</span
+      >
+      <a
+        href={`/crear?redirect=/eventos/${eventoId}`}
+        title="Agregar Miembro"
+        class="p-2 bg-blue-600 hover:bg-blue-500 rounded-full"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </a>
+      <button
+        id="show-attendees-btn"
+        type="button"
+        title="Ver lista de miembros"
+        class="p-2 bg-slate-700 hover:bg-slate-600 rounded-full"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </button>
+    </div>
+
+    <h2 class="sm:text-xs lg:text-xl font-semibold mb-2">
+      Agregar Miembros al Evento
+    </h2>
+
+    <form method="POST">
+      <div
+        class="mb-1 flex flex-wrap items-center justify-between lg:gap-3 sm:gap-2 p-4 bg-base-200 rounded-lg"
+      >
+        <!-- Search -->
+        <div class="flex items-center gap-4">
+          <div class="relative">
+            <input
+              type="text"
+              id="filter-input"
+              placeholder="Buscar..."
+              class="text-xs w-full max-w-xs pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+            />
+            <button
+              id="clear-filter-btn"
+              type="button"
+              class="absolute inset-y-0 right-0 items-center pr-3 hidden"
+              aria-label="Limpiar búsqueda"
+            >
+              <svg
+                class="h-5 w-5 text-gray-400 hover:text-gray-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                ><path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"></path></svg
+              >
+            </button>
+          </div>
+        </div>
+
+        <!-- Filters and Action -->
+        <div class="flex flex-wrap items-center justify-start gap-4">
+          <div class="flex items-center">
+            <input
+              id="status-filter-checkbox"
+              type="checkbox"
+              class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label for="status-filter-checkbox" class="ml-2 text-sm font-medium"
+              >Mostrar inactivos</label
+            >
+          </div>
+
+          <select
+            id="zona-filter-select"
+            class="block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:w-auto sm:max-w-xs"
+          >
+            <option value="all">Todas las zonas</option>
+            {
+              zonas.map((zona) => (
+                <option value={zona.id}>{zona.nombre_zona}</option>
+              ))
+            }
+          </select>
+
+          <button
+            type="submit"
+            class="inline-block rounded bg-green-600 px-4 py-2 text-xs font-medium text-white hover:bg-green-700"
+          >
+            Incluir Seleccionados
+          </button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-lg border border-gray-700 shadow-md">
+        <table
+          class="table-fixed min-w-full divide-y-2 divide-gray-700 bg-slate-800 text-sm"
+        >
+          <thead class="bg-slate-900">
+            <tr>
+              <th class="w-12 px-4 py-2"> </th>
+              <th class="whitespace-nowrap px-4 py-2 font-medium text-left"
+                >Nombre y Apellido</th
+              >
+              <th class="whitespace-nowrap px-4 py-2 font-medium text-left"
+                >Cédula</th
+              >
+              <th class="whitespace-nowrap px-4 py-2 font-medium text-left"
+                >Status</th
+              >
+              <th class="whitespace-nowrap px-4 py-2 font-medium text-left"
+                >Zona</th
+              >
+            </tr>
+          </thead>
+          <tbody id="miembros-table-body" class="divide-y divide-gray-700">
+            {
+              miembros.map((miembro) => (
+                <tr
+                  data-status={miembro.status ? "activo" : "inactivo"}
+                  data-zona-id={miembro.zona_id}
+                >
+                  <td class="px-4 py-2">
+                    <input
+                      type="checkbox"
+                      name="miembroIds"
+                      value={miembro.id}
+                      class="member-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-2 font-medium">
+                    {miembro.nombre} {miembro.apellido}
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-2 text-gray-400">
+                    {miembro.cedula}
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-2 text-gray-400">
+                    <span
+                      class:list={[
+                        "px-2 py-1 rounded-full text-xs font-semibold",
+                        miembro.status
+                          ? "bg-green-900 text-green-300"
+                          : "bg-red-900 text-red-300",
+                      ]}
+                    >
+                      {miembro.status ? "Activo" : "Inactivo"}
+                    </span>
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-2 text-gray-400">
+                    {miembro.zonas.nombre_zona}
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      {
+        miembros.length === 0 && (
+          <div class="text-center py-10 mt-4 bg-base-200 rounded-lg">
+            <p class="mb-4">No hay más miembros para agregar a este evento.</p>
+            <p>
+              Todos los miembros registrados ya están en la lista de asistencia.
+            </p>
+          </div>
+        )
+      }
+    </form>
+  </div>
+
+  <!-- Attendee List Modal -->
+  <div
+    id="attendee-modal"
+    class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4"
+    style="display: none;"
+  >
+    <div
+      class="bg-slate-800 text-slate-50 rounded-lg shadow-xl p-6 w-full max-w-md mx-auto"
+    >
+      <div
+        class="flex justify-between items-center mb-4 border-b border-slate-600 pb-2"
+      >
+        <h3 class="text-sm lg:text-xl font-bold">Miembros en el Evento</h3>
+        <button
+          id="close-modal-btn"
+          type="button"
+          class="text-2xl font-bold p-1 hover:text-red-500">&times;</button
+        >
+      </div>
+      <ul class="space-y-2 max-h-96 overflow-y-auto">
+        {
+          miembrosEnAsistencia.map((asistencia) => (
+            <li class="bg-slate-700 p-3 rounded-md text-xs lg:text-md">
+              {asistencia.miembros.nombre} {asistencia.miembros.apellido}
+            </li>
+          ))
+        }
+        {
+          miembrosEnAsistencia.length === 0 && (
+            <li class="text-gray-400 text-center p-4">
+              Aún no hay miembros en este evento.
+            </li>
+          )
+        }
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    function initializePage() {
+      const filterInput = document.getElementById(
+        "filter-input"
+      ) as HTMLInputElement;
+      const clearFilterBtn = document.getElementById(
+        "clear-filter-btn"
+      ) as HTMLButtonElement;
+      const statusCheckbox = document.getElementById(
+        "status-filter-checkbox"
+      ) as HTMLInputElement;
+      const zonaSelect = document.getElementById(
+        "zona-filter-select"
+      ) as HTMLSelectElement;
+      const tableBody = document.getElementById("miembros-table-body");
+
+      // Modal elements
+      const showAttendeesBtn = document.getElementById("show-attendees-btn");
+      const attendeeModal = document.getElementById("attendee-modal");
+      const closeModalBtn = document.getElementById("close-modal-btn");
+
+      if (
+        !filterInput ||
+        !tableBody ||
+        !clearFilterBtn ||
+        !statusCheckbox ||
+        !zonaSelect ||
+        !showAttendeesBtn ||
+        !attendeeModal ||
+        !closeModalBtn
+      ) {
+        return;
+      }
+
+      const allRows = Array.from(tableBody.getElementsByTagName("tr"));
+
+      function applyFilters() {
+        const searchTerm = filterInput.value.toLowerCase();
+        const showInactive = statusCheckbox.checked;
+        const selectedZona = zonaSelect.value;
+
+        for (const row of allRows) {
+          const rowStatus = row.dataset.status;
+          const rowZonaId = row.dataset.zonaId;
+          const nameCell = row.cells[1];
+          const cedulaCell = row.cells[2];
+
+          const matchesStatus = showInactive || rowStatus === "activo";
+          const matchesZona =
+            selectedZona === "all" || rowZonaId === selectedZona;
+          const matchesSearch =
+            !searchTerm ||
+            nameCell?.textContent?.toLowerCase().includes(searchTerm) ||
+            cedulaCell?.textContent?.toLowerCase().includes(searchTerm);
+
+          row.style.display =
+            matchesStatus && matchesZona && matchesSearch ? "" : "none";
+        }
+      }
+
+      function handleSearchInput() {
+        applyFilters();
+        clearFilterBtn.classList.toggle("hidden", !filterInput.value);
+      }
+
+      function clearSearchInput() {
+        filterInput.value = "";
+        applyFilters();
+        clearFilterBtn.classList.add("hidden");
+        filterInput.focus();
+      }
+
+      function showModal() {
+        attendeeModal.style.display = "flex";
+      }
+
+      function hideModal() {
+        attendeeModal.style.display = "none";
+      }
+
+      // Attach listeners only once
+      if (!filterInput.dataset.initialized) {
+        filterInput.addEventListener("input", handleSearchInput);
+        clearFilterBtn.addEventListener("click", clearSearchInput);
+        statusCheckbox.addEventListener("change", applyFilters);
+        zonaSelect.addEventListener("change", applyFilters);
+
+        // Modal listeners
+        showAttendeesBtn.addEventListener("click", showModal);
+        closeModalBtn.addEventListener("click", hideModal);
+        attendeeModal.addEventListener("click", (e) => {
+          if (e.target === attendeeModal) {
+            hideModal();
+          }
+        });
+
+        filterInput.dataset.initialized = "true";
+      }
+
+      applyFilters();
+      handleSearchInput();
+    }
+
+    document.addEventListener("astro:page-load", initializePage);
+  </script>
+</Layout>

@@ -1,0 +1,16 @@
+--- 
+import { Image } from 'astro:assets';
+import myImage from '@assets/hero.png';
+---
+
+<Image class='w-full h-full object-cover' src={myImage} alt="Una descripción de mi imagen." />
+
+<!-- Modo de trabajar imagenes en Astro
+ 
+<Image src={localBirdImage} alt="Un pájaro sentado sobre un nido de huevos."/>
+<Image src="/images/bird-in-public-folder.jpg" alt="Un pájaro." width="50" height="50" />
+<Image src="https://example.com/remote-bird.jpg" alt="Un pájaro." width="50" height="50" />
+
+<img src={localBirdImage.src} alt="Un pájaro sentado sobre un nido de huevos.">
+<img src="/images/bird-in-public-folder.jpg" alt="Un pájaro.">
+<img src="https://example.com/remote-bird.jpg" alt="Un pájaro."> -->

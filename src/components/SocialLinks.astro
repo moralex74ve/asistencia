@@ -1,0 +1,29 @@
+---
+import { socialLinks } from "../data/userData.js";
+---
+<!--  El tipo de icono lo sacamos de iconify 
+https://icon-sets.iconify.design/  -->
+
+<div class="flex items-center justify-evenly w-full max-w-[295px] mt-3">
+  {
+    socialLinks.map((icono) => (
+      <a
+        class="group flex flex-col items-center relative no-underline min-h-[48px] gap-2.5 text-[var(--text-highligth)] dark:text-[rgb(0,183,170)]"
+        href={icono.socialUl}
+        target="_blank"
+        rel="nofollow noreferrer noopener"
+        data-astro-prefetch
+      >
+        <iconify-icon
+          icon={icono.socialIcon}
+          width="25"
+          height="25"
+          class="transform transition-all duration-400 text-blue-600 hover:scale-[1.4] hover:text-blue-700 "
+        />
+        <span class="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute top-6 mt-1 whitespace-nowrap">
+          {icono.socialName}
+        </span>
+      </a>
+    ))
+  }
+</div>

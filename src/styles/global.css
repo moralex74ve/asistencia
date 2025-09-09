@@ -1,0 +1,11 @@
+@import "@fontsource-variable/montserrat";
+/* @import "flowbite/src/themes/default";  Eliminada la importación de valores preestablecidos */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-montserrat: "Montserrat Variable", sans-serif;
+  --font-sans: "Montserrat Variable", system-ui, sans-serif;
+}

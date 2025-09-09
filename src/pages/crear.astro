@@ -1,0 +1,185 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { prisma } from '../db';
+import { Prisma } from '@prisma/client';
+
+export const prerender = false;
+
+let errorMessage = "";
+const zonas = await prisma.zonas.findMany({
+  orderBy: { nombre_zona: 'asc' },
+});
+
+// Initialize formData with default values
+let formData = {
+  nombre: '',
+  apellido: '',
+  cedula: '',
+  direccion: '',
+  telef: '',
+  telf_2: '',
+  status: true,
+  zonaId: '',
+  kids: false
+};
+
+if (Astro.request.method === "POST") {
+  const data = await Astro.request.formData();
+  // Update formData with submitted values
+  formData = {
+    nombre: data.get("nombre") as string,
+    apellido: data.get("apellido") as string,
+    cedula: data.get("cedula") as string,
+    direccion: data.get("direccion") as string,
+    telef: data.get("telef") as string,
+    telf_2: data.get("telf_2") as string,
+    status: data.get("status") === "on",
+    zonaId: data.get("zonaId") as string,
+    kids: data.get("kids") === "on",
+  };
+
+  try {
+    // Basic validation
+    if (!formData.nombre || !formData.apellido || !formData.cedula || !formData.zonaId) {
+      throw new Error("Nombre, Apellido, Cédula y Zona son campos requeridos.");
+    }
+
+    const capitalize = (str: string) => {
+      if (!str) return '';
+      return str
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    };
+
+    await prisma.miembros.create({
+      data: {
+        nombre: capitalize(formData.nombre),
+        apellido: capitalize(formData.apellido),
+        cedula: formData.cedula,
+        direccion: formData.direccion,
+        telef: formData.telef,
+        telf_2: formData.telf_2,
+        status: formData.status,
+        zona_id: formData.zonaId,
+        kids: formData.kids,
+      },
+    });
+    
+    const redirectUrl = Astro.url.searchParams.get('redirect');
+    return Astro.redirect(redirectUrl || "/listado");
+
+  } catch (error) {
+    console.error(error);
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      errorMessage = 'La cédula introducida ya existe. Por favor, verifíquela.';
+    } else {
+      errorMessage = `Error al crear el miembro: ${error.message}`;
+    }
+  }
+}
+---
+
+<Layout title="Agregar Miembro">
+  <div class="max-w-xl mx-auto py-10">
+    <h1 class="text-2xl font-bold mb-6 text-white text-center">Agregar Nuevo Miembro</h1>
+
+    {errorMessage && (
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+        <strong class="font-bold">¡Error! </strong>
+        <span class="block sm:inline">{errorMessage}</span>
+      </div>
+    )}
+
+    <form method="POST" data-astro-reload class="space-y-6 bg-white p-8 rounded-lg shadow-md">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre</label>
+          <input type="text" name="nombre" id="nombre" required value={formData.nombre} class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div>
+          <label for="apellido" class="block text-sm font-medium text-gray-700">Apellido</label>
+          <input type="text" name="apellido" id="apellido" required value={formData.apellido} class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label for="cedula" class="block text-sm font-medium text-gray-700">Cédula</label>
+          <input type="text" name="cedula" id="cedula" required value={formData.cedula} class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div class="flex items-center mt-6">
+          <input type="checkbox" name="kids" id="kids" checked={formData.kids} class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+          <label for="kids" class="ml-2 block text-sm text-gray-900">Niño</label>
+        </div>
+      </div>
+
+       <div>
+        <label for="zonaId" class="block text-sm font-medium text-gray-700">Zona</label>
+        <select name="zonaId" id="zonaId" required class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          <option value="" disabled selected={!formData.zonaId}>Selecciona una zona</option>
+          {zonas.map(zona => (
+            <option value={zona.id} selected={zona.id === formData.zonaId}>{zona.nombre_zona}</option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label for="direccion" class="block text-sm font-medium text-gray-700">Dirección</label>
+        <textarea name="direccion" id="direccion" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">{formData.direccion}</textarea>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label for="telef" class="block text-sm font-medium text-gray-700">Celular</label>
+          <input type="text" name="telef" id="telef" value={formData.telef} class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div>
+          <label for="telf_2" class="block text-sm font-medium text-gray-700">Teléfono 2 (Opcional)</label>
+          <input type="text" name="telf_2" id="telf_2" value={formData.telf_2} class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+      </div>
+
+     
+
+      <div class="flex items-center">
+        <input type="checkbox" name="status" id="status" checked={formData.status} class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+        <label for="status" class="ml-2 block text-sm text-gray-900">Activo</label>
+      </div>
+
+      <div class="flex justify-end gap-4">
+        <a id="cancel-button" href="/listado" class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">Cancelar</a>
+        <button type="submit" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">Guardar</button>
+      </div>
+    </form>
+  </div>
+</Layout>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const cancelButton = document.getElementById('cancel-button') as HTMLAnchorElement;
+    if (cancelButton) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectUrl = urlParams.get('redirect');
+      if (redirectUrl) {
+        cancelButton.href = redirectUrl;
+      }
+    }
+
+    const kidCheckbox = document.getElementById('kids') as HTMLInputElement;
+    const cedulaInput = document.getElementById('cedula') as HTMLInputElement;
+
+    if (kidCheckbox && cedulaInput && !kidCheckbox.dataset.initialized) {
+      kidCheckbox.addEventListener('change', () => {
+        if (kidCheckbox.checked) {
+          const randomNumber = Math.floor(1000 + Math.random() * 9000);
+          cedulaInput.value = `kids-${randomNumber}`;
+        } else {
+          cedulaInput.value = '';
+        }
+      });
+      kidCheckbox.dataset.initialized = 'true';
+    }
+  });
+</script>

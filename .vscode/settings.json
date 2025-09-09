@@ -1,0 +1,7 @@
+{
+  "files.associations": {
+    "*.css": "tailwindcss",
+    "npm.packageManager": "pnpm"
+  },
+  "git.ignoreLimitWarning": true
+}

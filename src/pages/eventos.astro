@@ -1,0 +1,118 @@
+---
+export const prerender = false
+import Layout from "../layouts/Layout.astro";
+import { prisma } from "../db";
+
+// Manejar la creación de un nuevo evento
+if (Astro.request.method === "POST") {
+  try {
+    const formData = await Astro.request.formData();
+    const nombre = formData.get("nombre")?.toString();
+    const fechaStr = formData.get("fecha")?.toString();
+
+    // Asegurarse de que los campos no estén vacíos
+    if (nombre && fechaStr) {
+      // Para evitar problemas de zona horaria, creamos la fecha en UTC
+      // El input type="date" devuelve 'YYYY-MM-DD'
+      const eventDate = new Date(`${fechaStr}T00:00:00Z`);
+
+      await prisma.evento.create({
+        data: {
+          nombre,
+          fecha: eventDate,
+        },
+      });
+      // Redirigir para evitar reenvío del formulario
+      return Astro.redirect("/eventos");
+    }
+  } catch (error) {
+    console.error("Error creating event:", error);
+  }
+}
+
+// Obtener todos los eventos para mostrarlos
+const eventos = await prisma.evento.findMany({
+  orderBy: {
+    fecha: "desc",
+  },
+});
+---
+
+<Layout title="Administración de Eventos">
+  <div class="container text-slate-50 mx-auto px-4 py-8 relative">
+    <a href="/" class="absolute top-5 left-5 text-blue-400 hover:text-blue-300 transition-colors hidden sm:block" title="Volver al Menú">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
+        </svg>
+    </a>
+    <h1 class="text-4xl font-bold mb-6 text-center">
+      Administración de Eventos
+    </h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+      <!-- Formulario para crear nuevo evento -->
+      <section class="bg-base-200 text-slate-50 p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-semibold mb-4">Crear Nuevo Evento</h2>
+        <form method="POST" class="space-y-4">
+          <div>
+            <label for="nombre" class="block text-sm font-medium mb-1"
+              >Nombre del Evento</label
+            >
+            <input
+              type="text"
+              id="nombre"
+              name="nombre"
+              required
+              class="text-black input input-bordered w-full"
+            />
+          </div>
+          <div>
+            <label for="fecha" class="block text-sm font-medium mb-1"
+              >Fecha del Evento</label
+            >
+            <input
+              type="date"
+              id="fecha"
+              name="fecha"
+              required
+              class="input text-black input-bordered w-full"
+            />
+          </div>
+          <button
+            type="submit"
+            class="w-full inline-block rounded bg-blue-600 px-5 py-3 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring"
+            >Crear Evento</button
+          >
+        </form>
+      </section>
+
+      <!-- Listado de eventos existentes -->
+      <section class="bg-base-200 text-slate-50 p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-semibold mb-4">Eventos Existentes</h2>
+        <div class="space-y-4">
+          {
+            eventos.length > 0 ? (
+              <ul class="list-disc list-inside">
+                  {eventos.map((evento) => (
+                  <li class="mb-2 flex justify-between items-center">
+                    <a
+                      href={`/eventos/${evento.id}`}
+                      class="text-lg hover:underline"
+                    >
+                      {evento.nombre} -{" "}
+                      {new Date(evento.fecha).toLocaleDateString('es-ES', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p class="text-center text-gray-500 mt-8">
+                No hay eventos creados todavía.
+              </p>
+            )
+          }
+        </div>
+      </section>
+    </div>
+  </div>
+</Layout>

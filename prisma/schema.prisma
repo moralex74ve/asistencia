@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model asistencia {
+  id         String   @id(map: "Asistencia_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  miembro_id String   @db.Uuid
+  evento_id  String   @db.Uuid
+  presente   Boolean  @default(false)
+  evento     evento   @relation(fields: [evento_id], references: [id], onDelete: Cascade, map: "Asistencia_evento_id_fkey")
+  miembros   miembros @relation(fields: [miembro_id], references: [id], onDelete: Cascade, map: "Asistencia_miembro_id_fkey")
+
+  @@unique([miembro_id, evento_id], map: "Asistencia_miembro_id_evento_id_key")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model evento {
+  id         String       @id(map: "Evento_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre     String
+  fecha      DateTime
+  asistencia asistencia[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model miembros {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @map("_id") @db.Uuid
+  nombre     String
+  apellido   String
+  cedula     String       @unique
+  direccion  String?
+  telef      String?
+  telf_2     String?
+  status     Boolean      @default(true)
+  zona_id    String       @db.Uuid
+  kids       Boolean?     @default(false)
+  asistencia asistencia[]
+  zonas      zonas        @relation(fields: [zona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model session {
+  id         String   @id
+  user_id    String
+  expires_at DateTime @db.Timestamptz(6)
+  user       user     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user {
+  id            String    @id
+  username      String    @unique
+  password_hash String
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  session       session[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model zonas {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre_zona String
+  miembros    miembros[]
+}
