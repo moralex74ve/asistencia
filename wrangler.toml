@@ -1,6 +1,10 @@
-name = "asistencia-digital" # <- Nombre corregido
+# wrangler.toml
+name = "asistencia-digital"
 main = "./dist/_worker.js"
 compatibility_date = "2025-09-10"
 
 [site]
 bucket = "./dist/client"
+
+[vars]
+DATABASE_URL = "tu_prisma_acelerate_url"
