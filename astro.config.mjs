@@ -4,11 +4,11 @@ import tailwind from "@astrojs/tailwind";
 
 import svelte from "@astrojs/svelte";
 
-import cloudflare from "@astrojs/cloudflare";
+import netlify from "@astrojs/netlify";
 
 // https://astro.build/config
 export default defineConfig({
-  adapter: cloudflare(),
+  adapter: netlify(),
   integrations: [tailwind(), svelte()],
   site: "https://moralex74.duckdns.org",
   output: "server",
