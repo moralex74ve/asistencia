@@ -1,8 +1,14 @@
 # wrangler.toml
-name = "asistencia"
+name = "asistencia-digital"
 main = "./dist/_worker.js"
 compatibility_date = "2025-09-10"
 
 [site]
 bucket = "./dist/client"
 
+[vars]
+DATABASE_URL="postgresql://postgres.xkepvqcnwkylpobjqtya:t1cTlWwDCIBhPpyl@aws-0-us-east-2.pooler.supabase.com:6543/postgres?pgbouncer=true"
+
+[build]
+# Marcar el cliente de Prisma como externo es necesario para el despliegue
+external = ["@prisma/client"]
