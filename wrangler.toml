@@ -1,4 +1,4 @@
-name = "Asistencia_Digital"
+name = "asistencia-digital" # <- Nombre corregido
 main = "./dist/_worker.js"
 compatibility_date = "2025-09-10"
 
