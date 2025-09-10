@@ -1,10 +1,8 @@
 # wrangler.toml
-name = "asistencia-digital"
+name = "asistencia"
 main = "./dist/_worker.js"
 compatibility_date = "2025-09-10"
 
 [site]
 bucket = "./dist/client"
 
-[vars]
-DATABASE_URL = "tu_prisma_acelerate_url"
