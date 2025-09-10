@@ -1,0 +1,6 @@
+name = "Asistencia_Digital"
+main = "./dist/_worker.js"
+compatibility_date = "2025-09-10"
+
+[site]
+bucket = "./dist/client"
