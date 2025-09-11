@@ -104,13 +104,13 @@ const [miembros, zonas] = await Promise.all([
 <script>
   function initializePage() {
     // Get all interactive elements
-    const filterInput = document.getElementById('filter-input') as HTMLInputElement;
-    const clearFilterBtn = document.getElementById('clear-filter-btn') as HTMLButtonElement;
-    const statusCheckbox = document.getElementById('status-filter-checkbox') as HTMLInputElement;
-    const zonaSelect = document.getElementById('zona-filter-select') as HTMLSelectElement;
-    const tableBody = document.getElementById('miembros-table-body') as HTMLTableSectionElement;
-    const recordCounterLabel = document.getElementById('record-counter-label') as HTMLSpanElement;
-    const recordCounterValue = document.getElementById('record-counter-value') as HTMLSpanElement;
+    const filterInput = document.getElementById('filter-input');
+    const clearFilterBtn = document.getElementById('clear-filter-btn');
+    const statusCheckbox = document.getElementById('status-filter-checkbox');
+    const zonaSelect = document.getElementById('zona-filter-select');
+    const tableBody = document.getElementById('miembros-table-body');
+    const recordCounterLabel = document.getElementById('record-counter-label');
+    const recordCounterValue = document.getElementById('record-counter-value');
 
     if (!filterInput || !tableBody || !clearFilterBtn || !statusCheckbox || !zonaSelect) {
       return; // Exit if elements are not on the page
@@ -119,9 +119,9 @@ const [miembros, zonas] = await Promise.all([
     const allRows = Array.from(tableBody.getElementsByTagName('tr'));
     const totalRecords = allRows.length;
 
-    function updateCounter(visibleRows: number) {
-      recordCounterLabel.textContent = 'Mostrando:';
-      recordCounterValue.textContent = `${visibleRows} de ${totalRecords}`;
+    function updateCounter(visibleRows) {
+      if (recordCounterLabel) recordCounterLabel.textContent = 'Mostrando:';
+      if (recordCounterValue) recordCounterValue.textContent = `${visibleRows} de ${totalRecords}`;
     }
 
     function applyFilters() {
@@ -169,8 +169,8 @@ const [miembros, zonas] = await Promise.all([
       filterInput.focus();
     }
 
-    async function handleTableClick(e: MouseEvent) {
-      const target = e.target as HTMLElement;
+    async function handleTableClick(e) {
+      const target = e.target;
       if (target.classList.contains('delete-btn')) {
         const id = target.dataset.id;
         if (id && confirm('¿Estás seguro de que quieres eliminar este registro?')) {
@@ -184,7 +184,7 @@ const [miembros, zonas] = await Promise.all([
               alert(`Error al eliminar: ${error.message || response.statusText}`);
             }
           } catch (error) {
-            alert(`Error de red: ${(error as Error).message}`);
+            alert(`Error de red: ${error.message}`);
           }
         }
       }
