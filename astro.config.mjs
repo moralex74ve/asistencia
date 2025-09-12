@@ -3,20 +3,20 @@ import node from "@astrojs/node";
 import tailwind from "@astrojs/tailwind";
 
 import svelte from "@astrojs/svelte";
-
-import netlify from "@astrojs/netlify";
+import vercel from "@astrojs/vercel";
 
 // https://astro.build/config
 export default defineConfig({
-  adapter: netlify(),
   integrations: [tailwind(), svelte()],
   site: "https://moralex74.duckdns.org",
   output: "server",
+
   build: {
     format: "directory",
     inlineStylesheets: "always",
     minify: true,
   },
+
   vite: {
     build: {
       target: "esnext",
@@ -25,4 +25,5 @@ export default defineConfig({
       sourcemap: false,
     },
   },
+  adapter: vercel(),
 });
