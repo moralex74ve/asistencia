@@ -10,6 +10,7 @@ export default defineConfig({
   integrations: [tailwind(), svelte()],
   site: "https://moralex74.duckdns.org",
   output: "server",
+  adapter: vercel(),
 
   build: {
     format: "directory",
@@ -25,5 +26,5 @@ export default defineConfig({
       sourcemap: false,
     },
   },
-  adapter: vercel(),
+  
 });
