@@ -8,8 +8,8 @@ const [miembros, zonas] = await Promise.all([
       zonas: true, // Include related zone data for display
     },
     orderBy: {
-      nombre: 'asc'
-    }
+      nombre: "asc",
+    },
   }),
   prisma.zonas.findMany({
     where: {
@@ -18,85 +18,141 @@ const [miembros, zonas] = await Promise.all([
       },
     },
     orderBy: {
-      nombre_zona: 'asc'
-    }
-  })
+      nombre_zona: "asc",
+    },
+  }),
 ]);
 ---
 
-<div class="mb-4 flex flex-col sm:flex-row flex-wrap items-center justify-between gap-4">
-  <!-- Search and Add Button -->
-  <div class="flex items-center gap-4 w-full sm:w-auto">
-    <div class="relative flex-grow">
-      <input type="text" id="filter-input" placeholder="Buscar..." class="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900">
-      <button id="clear-filter-btn" class="absolute inset-y-0 right-0 items-center pr-3 hidden" aria-label="Limpiar búsqueda">
-        <svg class="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+<div class="mb-4 w-full overflow-x-auto">
+  <div class="flex flex-nowrap items-center gap-4 min-w-[900px]">
+    <!-- Search -->
+    <div class="relative flex-grow max-w-xs">
+      <input
+        type="text"
+        id="filter-input"
+        placeholder="Buscar..."
+        class="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+      />
+      <button
+        id="clear-filter-btn"
+        class="absolute inset-y-0 right-0 items-center pr-3 hidden"
+        aria-label="Limpiar búsqueda"
+      >
+        <svg
+          class="h-5 w-5 text-gray-400 hover:text-gray-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"></path>
         </svg>
       </button>
     </div>
-    <a href="/crear" class="inline-block rounded bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 whitespace-nowrap">
+    <!-- Add Button -->
+    <a
+      href="/crear"
+      class="inline-block rounded bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 whitespace-nowrap"
+    >
       Agregar Miembro
     </a>
-  </div>
-
-  <!-- Filters -->
-  <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-    <div class="flex items-center">
-      <input id="status-filter-checkbox" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-      <label for="status-filter-checkbox" class="ml-2 text-sm font-medium text-slate-50">Mostrar inactivos</label>
+    <!-- Status Filter -->
+    <div class="flex items-center whitespace-nowrap">
+      <input
+        id="status-filter-checkbox"
+        type="checkbox"
+        class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+      />
+      <label
+        for="status-filter-checkbox"
+        class="ml-2 text-sm font-medium text-slate-50">Mostrar inactivos</label
+      >
     </div>
-
-    <select id="zona-filter-select" class="w-full sm:max-w-xs block pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 text-sm">
+    <!-- Zona Filter -->
+    <select
+      id="zona-filter-select"
+      class="w-full max-w-xs block pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 text-sm"
+    >
       <option value="all">Todas las zonas</option>
-      {zonas.map(zona => (
-        <option value={zona.id}>{zona.nombre_zona}</option>
-      ))}
+      {zonas.map((zona) => <option value={zona.id}>{zona.nombre_zona}</option>)}
     </select>
-  </div>
-
-  <!-- Counter -->
-  <div class="hidden sm:block text-sm">
-    <span id="record-counter-label" class="text-slate-50 font-medium">Registros:</span>
-    <span id="record-counter-value" class="font-bold text-slate-50">{miembros.length}</span>
+    <!-- Counter -->
+    <div class="text-sm whitespace-nowrap">
+      <span id="record-counter-label" class="text-slate-50 font-medium"
+        >Registros:</span
+      >
+      <span id="record-counter-value" class="font-bold text-slate-50"
+        >{miembros.length}</span
+      >
+    </div>
   </div>
 </div>
 
 <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-md">
-  <table class="table-fixed min-w-full divide-y-2 divide-gray-200 bg-white text-sm">
+  <table
+    class="table-fixed min-w-full divide-y-2 divide-gray-200 bg-white text-sm"
+  >
     <thead class="bg-gray-50">
       <tr>
-        <th class="whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-left">Nombre y Apellido</th>
-        <th class="whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-left">Cédula</th>
-        <th class="whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-left">Teléfono</th>
-        <th class="whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-left">Status</th>
-        <th class="whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-left">Zona</th>
-        <th class="whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-left">Acciones</th>
+        <th class="px-4 py-2 font-medium text-gray-900 text-left"
+          >Nombre y Apellido</th
+        >
+        <th class="px-4 py-2 font-medium text-gray-900 text-left">Cédula</th>
+        <th class="px-4 py-2 font-medium text-gray-900 text-left">Teléfono</th>
+        <th class="px-4 py-2 font-medium text-gray-900 text-left">Status</th>
+        <th class="px-4 py-2 font-medium text-gray-900 text-left">Zona</th>
+        <th class="px-4 py-2 font-medium text-gray-900 text-left">Acciones</th>
       </tr>
     </thead>
     <tbody id="miembros-table-body" class="divide-y divide-gray-200">
-      {miembros.map((miembro) => (
-        <tr data-miembro-id={miembro.id} data-status={miembro.status ? 'activo' : 'inactivo'} data-zona-id={miembro.zona_id}>
-          <td class="whitespace-nowrap px-4 py-2 font-medium text-gray-900">{miembro.nombre} {miembro.apellido}</td>
-          <td class="whitespace-nowrap px-4 py-2 text-gray-700">{miembro.cedula}</td>
-          <td class="whitespace-nowrap px-4 py-2 text-gray-700">{miembro.telef || 'N/A'}</td>
-          <td class="whitespace-nowrap px-4 py-2 text-gray-700">
-            <span class:list={[
-                "px-2 py-1 rounded-full text-xs font-semibold",
-                miembro.status ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800",
-            ]}>
-              {miembro.status ? 'Activo' : 'Inactivo'}
-            </span>
-          </td>
-          <td class="whitespace-nowrap px-4 py-2 text-gray-700">{miembro.zonas.nombre_zona}</td>
-          <td class="whitespace-nowrap px-4 py-2">
-            <div class="flex items-center gap-2">
-                <a href={`/editar/${miembro.id}`} class="inline-block rounded bg-yellow-500 px-3 py-1 text-xs font-medium text-white hover:bg-yellow-600">Editar</a>
-                <button data-id={miembro.id} class="delete-btn inline-block rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700">Eliminar</button>
-            </div>
-          </td>
-        </tr>
-      ))}
+      {
+        miembros.map((miembro) => (
+          <tr
+            data-miembro-id={miembro.id}
+            data-status={miembro.status ? "activo" : "inactivo"}
+            data-zona-id={miembro.zona_id}
+          >
+            <td class="px-4 py-2 font-medium text-gray-900">
+              {miembro.nombre} {miembro.apellido}
+            </td>
+            <td class="px-4 py-2 text-gray-700">{miembro.cedula}</td>
+            <td class="px-4 py-2 text-gray-700">{miembro.telef || "N/A"}</td>
+            <td class="px-4 py-2 text-gray-700">
+              <span
+                class:list={[
+                  "px-2 py-1 rounded-full text-xs font-semibold",
+                  miembro.status
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800",
+                ]}
+              >
+                {miembro.status ? "Activo" : "Inactivo"}
+              </span>
+            </td>
+            <td class="px-4 py-2 text-gray-700">{miembro.zonas.nombre_zona}</td>
+            <td class="px-4 py-2">
+              <div class="flex items-center gap-2">
+                <a
+                  href={`/editar/${miembro.id}`}
+                  class="inline-block rounded bg-yellow-500 px-3 py-1 text-xs font-medium text-white hover:bg-yellow-600"
+                >
+                  Editar
+                </a>
+                <button
+                  data-id={miembro.id}
+                  class="delete-btn inline-block rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+        ))
+      }
     </tbody>
   </table>
 </div>
@@ -104,24 +160,31 @@ const [miembros, zonas] = await Promise.all([
 <script>
   function initializePage() {
     // Get all interactive elements
-    const filterInput = document.getElementById('filter-input');
-    const clearFilterBtn = document.getElementById('clear-filter-btn');
-    const statusCheckbox = document.getElementById('status-filter-checkbox');
-    const zonaSelect = document.getElementById('zona-filter-select');
-    const tableBody = document.getElementById('miembros-table-body');
-    const recordCounterLabel = document.getElementById('record-counter-label');
-    const recordCounterValue = document.getElementById('record-counter-value');
+    const filterInput = document.getElementById("filter-input");
+    const clearFilterBtn = document.getElementById("clear-filter-btn");
+    const statusCheckbox = document.getElementById("status-filter-checkbox");
+    const zonaSelect = document.getElementById("zona-filter-select");
+    const tableBody = document.getElementById("miembros-table-body");
+    const recordCounterLabel = document.getElementById("record-counter-label");
+    const recordCounterValue = document.getElementById("record-counter-value");
 
-    if (!filterInput || !tableBody || !clearFilterBtn || !statusCheckbox || !zonaSelect) {
+    if (
+      !filterInput ||
+      !tableBody ||
+      !clearFilterBtn ||
+      !statusCheckbox ||
+      !zonaSelect
+    ) {
       return; // Exit if elements are not on the page
     }
 
-    const allRows = Array.from(tableBody.getElementsByTagName('tr'));
+    const allRows = Array.from(tableBody.getElementsByTagName("tr"));
     const totalRecords = allRows.length;
 
     function updateCounter(visibleRows) {
-      if (recordCounterLabel) recordCounterLabel.textContent = 'Mostrando:';
-      if (recordCounterValue) recordCounterValue.textContent = `${visibleRows} de ${totalRecords}`;
+      if (recordCounterLabel) recordCounterLabel.textContent = "Mostrando:";
+      if (recordCounterValue)
+        recordCounterValue.textContent = `${visibleRows} de ${totalRecords}`;
     }
 
     function applyFilters() {
@@ -137,17 +200,19 @@ const [miembros, zonas] = await Promise.all([
         const cedulaCell = row.cells[1];
 
         // Conditions for visibility
-        const matchesStatus = showInactive || rowStatus === 'activo';
-        const matchesZona = selectedZona === 'all' || rowZonaId === selectedZona;
-        const matchesSearch = !searchTerm || 
-                              (nameCell?.textContent?.toLowerCase().includes(searchTerm) || 
-                               cedulaCell?.textContent?.toLowerCase().includes(searchTerm));
+        const matchesStatus = showInactive || rowStatus === "activo";
+        const matchesZona =
+          selectedZona === "all" || rowZonaId === selectedZona;
+        const matchesSearch =
+          !searchTerm ||
+          nameCell?.textContent?.toLowerCase().includes(searchTerm) ||
+          cedulaCell?.textContent?.toLowerCase().includes(searchTerm);
 
         if (matchesStatus && matchesZona && matchesSearch) {
-          row.style.display = '';
+          row.style.display = "";
           visibleRows++;
         } else {
-          row.style.display = 'none';
+          row.style.display = "none";
         }
       }
       updateCounter(visibleRows);
@@ -156,32 +221,39 @@ const [miembros, zonas] = await Promise.all([
     function handleSearchInput() {
       applyFilters();
       if (filterInput.value) {
-        clearFilterBtn.classList.remove('hidden');
+        clearFilterBtn.classList.remove("hidden");
       } else {
-        clearFilterBtn.classList.add('hidden');
+        clearFilterBtn.classList.add("hidden");
       }
     }
 
     function clearSearchInput() {
-      filterInput.value = '';
+      filterInput.value = "";
       applyFilters();
-      clearFilterBtn.classList.add('hidden');
+      clearFilterBtn.classList.add("hidden");
       filterInput.focus();
     }
 
     async function handleTableClick(e) {
       const target = e.target;
-      if (target.classList.contains('delete-btn')) {
+      if (target.classList.contains("delete-btn")) {
         const id = target.dataset.id;
-        if (id && confirm('¿Estás seguro de que quieres eliminar este registro?')) {
+        if (
+          id &&
+          confirm("¿Estás seguro de que quieres eliminar este registro?")
+        ) {
           try {
-            const response = await fetch(`/api/miembros/${id}`, { method: 'DELETE' });
+            const response = await fetch(`/api/miembros/${id}`, {
+              method: "DELETE",
+            });
             if (response.ok) {
-              target.closest('tr')?.remove();
+              target.closest("tr")?.remove();
               initializePage(); // Re-initialize to update rows array and counts
             } else {
               const error = await response.json();
-              alert(`Error al eliminar: ${error.message || response.statusText}`);
+              alert(
+                `Error al eliminar: ${error.message || response.statusText}`
+              );
             }
           } catch (error) {
             alert(`Error de red: ${error.message}`);
@@ -192,12 +264,12 @@ const [miembros, zonas] = await Promise.all([
 
     // Attach listeners only once
     if (!filterInput.dataset.initialized) {
-      filterInput.addEventListener('input', handleSearchInput);
-      clearFilterBtn.addEventListener('click', clearSearchInput);
-      statusCheckbox.addEventListener('change', applyFilters);
-      zonaSelect.addEventListener('change', applyFilters);
-      tableBody.addEventListener('click', handleTableClick);
-      filterInput.dataset.initialized = 'true';
+      filterInput.addEventListener("input", handleSearchInput);
+      clearFilterBtn.addEventListener("click", clearSearchInput);
+      statusCheckbox.addEventListener("change", applyFilters);
+      zonaSelect.addEventListener("change", applyFilters);
+      tableBody.addEventListener("click", handleTableClick);
+      filterInput.dataset.initialized = "true";
     }
 
     // Initial UI setup on every load
@@ -206,5 +278,5 @@ const [miembros, zonas] = await Promise.all([
   }
 
   // Listen for Astro's client-side navigation event
-  document.addEventListener('astro:page-load', initializePage);
+  document.addEventListener("astro:page-load", initializePage);
 </script>

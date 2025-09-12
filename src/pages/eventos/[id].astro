@@ -124,7 +124,7 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
         </svg>
       </a>
       <button
-        id="show-attendees-btn"
+        id="event-show-attendees-btn"
         type="button"
         title="Ver lista de miembros"
         class="p-2 bg-slate-700 hover:bg-slate-600 rounded-full"
@@ -156,12 +156,12 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
           <div class="relative">
             <input
               type="text"
-              id="filter-input"
+              id="event-filter-input"
               placeholder="Buscar..."
               class="text-xs w-full max-w-xs pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
             />
             <button
-              id="clear-filter-btn"
+              id="event-clear-filter-btn"
               type="button"
               class="absolute inset-y-0 right-0 items-center pr-3 hidden"
               aria-label="Limpiar búsqueda"
@@ -185,17 +185,17 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
         <div class="flex flex-wrap items-center justify-start gap-4">
           <div class="flex items-center">
             <input
-              id="status-filter-checkbox"
+              id="event-status-filter-checkbox"
               type="checkbox"
               class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <label for="status-filter-checkbox" class="ml-2 text-sm font-medium"
+            <label for="event-status-filter-checkbox" class="ml-2 text-sm font-medium"
               >Mostrar inactivos</label
             >
           </div>
 
           <select
-            id="zona-filter-select"
+            id="event-zona-filter-select"
             class="block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:w-auto sm:max-w-xs"
           >
             <option value="all">Todas las zonas</option>
@@ -236,7 +236,7 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
               >
             </tr>
           </thead>
-          <tbody id="miembros-table-body" class="divide-y divide-gray-700">
+          <tbody id="event-miembros-table-body" class="divide-y divide-gray-700">
             {
               miembros.map((miembro) => (
                 <tr
@@ -293,7 +293,7 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
 
   <!-- Attendee List Modal -->
   <div
-    id="attendee-modal"
+    id="event-attendee-modal"
     class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4"
     style="display: none;"
   >
@@ -305,7 +305,7 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
       >
         <h3 class="text-sm lg:text-xl font-bold">Miembros en el Evento</h3>
         <button
-          id="close-modal-btn"
+          id="event-close-modal-btn"
           type="button"
           class="text-2xl font-bold p-1 hover:text-red-500">&times;</button
         >
@@ -332,23 +332,23 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
   <script>
     function initializePage() {
       const filterInput = document.getElementById(
-        "filter-input"
+        "event-filter-input"
       ) ;
       const clearFilterBtn = document.getElementById(
-        "clear-filter-btn"
+        "event-clear-filter-btn"
       ) ;
       const statusCheckbox = document.getElementById(
-        "status-filter-checkbox"
+        "event-status-filter-checkbox"
       ) ;
       const zonaSelect = document.getElementById(
-        "zona-filter-select"
+        "event-zona-filter-select"
       ) ;
-      const tableBody = document.getElementById("miembros-table-body");
+      const tableBody = document.getElementById("event-miembros-table-body");
 
       // Modal elements
-      const showAttendeesBtn = document.getElementById("show-attendees-btn");
-      const attendeeModal = document.getElementById("attendee-modal");
-      const closeModalBtn = document.getElementById("close-modal-btn");
+      const showAttendeesBtn = document.getElementById("event-show-attendees-btn");
+      const attendeeModal = document.getElementById("event-attendee-modal");
+      const closeModalBtn = document.getElementById("event-close-modal-btn");
 
       if (
         !filterInput ||
@@ -410,7 +410,7 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
       }
 
       // Attach listeners only once
-      if (!filterInput.dataset.initialized) {
+      if (!showAttendeesBtn.dataset.initialized) {
         filterInput.addEventListener("input", handleSearchInput);
         clearFilterBtn.addEventListener("click", clearSearchInput);
         statusCheckbox.addEventListener("change", applyFilters);
@@ -425,7 +425,7 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
           }
         });
 
-        filterInput.dataset.initialized = "true";
+        showAttendeesBtn.dataset.initialized = "true";
       }
 
       applyFilters();
