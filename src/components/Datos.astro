@@ -37,7 +37,7 @@ const [miembros, zonas] = await Promise.all([
         />
         <button
           id="clear-filter-btn"
-          class="absolute inset-y-0 right-0 flex items-center pr-3 hidden"
+          class="absolute inset-y-0 right-0 items-center pr-3 hidden"
           aria-label="Limpiar búsqueda"
         >
           <svg
@@ -179,12 +179,19 @@ const [miembros, zonas] = await Promise.all([
 <script>
   function initializePage() {
     // Get all interactive elements
+    /** @type {HTMLInputElement | null} */
     const filterInput = document.getElementById("filter-input");
+    /** @type {HTMLButtonElement | null} */
     const clearFilterBtn = document.getElementById("clear-filter-btn");
+    /** @type {HTMLInputElement | null} */
     const statusCheckbox = document.getElementById("status-filter-checkbox");
+    /** @type {HTMLSelectElement | null} */
     const zonaSelect = document.getElementById("zona-filter-select");
+    /** @type {HTMLTableSectionElement | null} */
     const tableBody = document.getElementById("miembros-table-body");
+    /** @type {HTMLSpanElement | null} */
     const recordCounterLabel = document.getElementById("record-counter-label");
+    /** @type {HTMLSpanElement | null} */
     const recordCounterValue = document.getElementById("record-counter-value");
 
     if (
@@ -241,8 +248,10 @@ const [miembros, zonas] = await Promise.all([
       applyFilters();
       if (filterInput.value) {
         clearFilterBtn.classList.remove("hidden");
+        clearFilterBtn.classList.add("flex");
       } else {
         clearFilterBtn.classList.add("hidden");
+        clearFilterBtn.classList.remove("flex");
       }
     }
 
