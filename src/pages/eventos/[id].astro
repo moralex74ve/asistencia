@@ -82,7 +82,10 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
 
 <Layout title={`Agregar Miembros a ${evento.nombre}`}>
   <div class="container mx-auto px-4 py-2 text-slate-50">
-    <a href="/eventos" class="text-blue-400 hover:underline mb-4 inline-block"
+    <a
+      id="back-to-events-link"
+      href="/eventos"
+      class="text-blue-400 hover:underline mb-4 inline-block"
       >&larr; Volver a todos los eventos</a
     >
     <h1 class="sm:text-xs lg:text-4xl font-bold">{evento.nombre}</h1>
@@ -350,6 +353,8 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
       const attendeeModal = document.getElementById("event-attendee-modal");
       const closeModalBtn = document.getElementById("event-close-modal-btn");
 
+      const backToEventsLink = document.getElementById("back-to-events-link");
+
       if (
         !filterInput ||
         !tableBody ||
@@ -358,7 +363,8 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
         !zonaSelect ||
         !showAttendeesBtn ||
         !attendeeModal ||
-        !closeModalBtn
+        !closeModalBtn ||
+        !backToEventsLink
       ) {
         return;
       }
@@ -409,12 +415,27 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
         attendeeModal.style.display = "none";
       }
 
+      function handleBackToEvents(e) {
+        const memberCheckboxes = document.querySelectorAll(
+          ".member-checkbox:checked"
+        );
+        if (memberCheckboxes.length > 0) {
+          const confirmation = confirm(
+            "Hay miembros seleccionados. ¿Desea descartar la selección y volver?"
+          );
+          if (!confirmation) {
+            e.preventDefault();
+          }
+        }
+      }
+
       // Attach listeners only once
       if (!showAttendeesBtn.dataset.initialized) {
         filterInput.addEventListener("input", handleSearchInput);
         clearFilterBtn.addEventListener("click", clearSearchInput);
         statusCheckbox.addEventListener("change", applyFilters);
         zonaSelect.addEventListener("change", applyFilters);
+        backToEventsLink.addEventListener("click", handleBackToEvents);
 
         // Modal listeners
         showAttendeesBtn.addEventListener("click", showModal);
