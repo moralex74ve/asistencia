@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { prisma } from '../../../db';
 
-export const prerender = false;
+/* export const prerender = false; */
 
 export const DELETE: APIRoute = async ({ params, request }) => {
   const { id } = params;

@@ -1,10 +1,20 @@
 ---
 import Layout from "@layouts/Layout.astro";
-export const prerender = true;
+ export const prerender = true; 
+
+// Verificar la sesión
+const sessionCookie = Astro.cookies.get("session");
+const userCookie = Astro.cookies.get("user");
+
+if (!sessionCookie || !userCookie) {
+  return Astro.redirect("/login");
+}
+
+
 ---
 
 <Layout>
-  <div class="flex flex-col items-center justify-center min-h-screen text-white">
+<!--   <div class="flex flex-col items-center justify-center min-h-screen text-white">
     <div class="border border-gray-600 rounded-lg p-8 bg-gray-800 shadow-lg">
       <h1 class="text-3xl font-bold mb-6 text-center text-slate-100">Menu</h1>
       <div class="flex flex-col space-y-4 w-64">
@@ -17,5 +27,5 @@ export const prerender = true;
         
       </div>
     </div>
-  </div>
+  </div> -->
 </Layout>
