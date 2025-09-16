@@ -3,10 +3,7 @@ export const prerender = false;
 import Layout from "../layouts/Layout.astro";
 
 
-// Verificar la sesión
-
 const userCookie = Astro.cookies.get("user");
-
 
 // Obtener datos del usuario
 const userData = JSON.parse(userCookie.value);

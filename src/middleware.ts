@@ -1,30 +1,33 @@
-import type { MiddlewareHandler } from 'astro';
+import { defineMiddleware } from 'astro:middleware';
+
+// Rutas que requieren solo autenticación (no necesariamente admin)
+const protectedRoutes = ['/dashboard', '/crear', '/listado', '/eventos', '/editar'];
 
 // Rutas que requieren rol de administrador
 const adminRoutes = ['/users'];
 
-export const onRequest: MiddlewareHandler = async (context, next) => {
+export const onRequest = defineMiddleware(async (context, next) => {
   const { url, cookies, redirect } = context;
+  const pathname = url.pathname;
 
-  // DEBUG: Imprimir la ruta actual
- /*  console.log(`[Middleware] Pathname: ${url.pathname}`); */
+  const onProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+  const onAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
 
-  const onAdminRoute = adminRoutes.some(route => url.pathname === route || url.pathname.startsWith(route + '/'));
+  // Si no es una ruta protegida, continuar sin hacer nada.
+  if (!onProtectedRoute && !onAdminRoute) {
+    return next();
+  }
 
-  // DEBUG: Imprimir si la ruta es considerada de admin
-  console.log(`[Middleware] Is Admin Route? ${onAdminRoute}`);
+  // Para todas las rutas protegidas (incluidas las de admin), verificar la sesión.
+  const sessionCookie = cookies.get('session');
+  if (!sessionCookie) {
+    // Guardar la URL a la que se intentaba acceder para redirigir después del login
+    return redirect(`/login?redirect=${encodeURIComponent(pathname)}`);
+  }
 
-  // Si la ruta actual está en las rutas de admin
+  // Si es una ruta de admin, realizar la verificación de rol adicional.
   if (onAdminRoute) {
-    const session = cookies.get('session');
     const userCookie = cookies.get('user');
-
-    // 1. Verificar si el usuario está logueado
-    if (!session) {
-      return redirect('/login');
-    }
-
-    // 2. Verificar si es admin
     if (!userCookie) {
       return redirect('/dashboard?error=unauthorized');
     }
@@ -35,11 +38,11 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
         return redirect('/dashboard?error=unauthorized');
       }
     } catch (e) {
-      // Si la cookie está malformada, denegar acceso
+      // Si la cookie está malformada, denegar acceso.
       return redirect('/dashboard?error=unauthorized');
     }
   }
 
-  // Si no es una ruta de admin o si pasó todas las verificaciones, continuar.
+  // Si pasó todas las verificaciones, continuar.
   return next();
-};
+});
