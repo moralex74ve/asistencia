@@ -21,8 +21,9 @@
     "@prisma/client": "^6.16.0",
     "@prisma/extension-accelerate": "^2.0.2",
     "astro": "^5.13.5",
-    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
     "flowbite": "^3.1.2",
+    "jsonwebtoken": "^9.0.2",
     "svelte": "^5.38.1",
     "typescript": "^5.9.2"
   },
@@ -37,6 +38,7 @@
   "license": "MIT",
   "devDependencies": {
     "@tailwindcss/typography": "0.5.10",
+    "@types/jsonwebtoken": "^9.0.10",
     "autoprefixer": "10.4.17",
     "postcss": "8.4.35",
     "prettier": "^3.6.2",

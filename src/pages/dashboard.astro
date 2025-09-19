@@ -1,12 +1,35 @@
 ---
 export const prerender = false;
 import Layout from "../layouts/Layout.astro";
+import { prisma } from '../db';
 
+// El middleware ya ha validado al usuario y lo ha puesto en Astro.locals.
+// Si llegamos aquí, el usuario está autenticado.
+const { user } = Astro.locals;
 
-const userCookie = Astro.cookies.get("user");
+// Si por alguna razón el usuario no está en locals (aunque el middleware debería impedirlo),
+// redirigimos por seguridad.
+if (!user) {
+  return Astro.redirect("/login");
+}
 
-// Obtener datos del usuario
-const userData = JSON.parse(userCookie.value);
+// Obtener los datos completos del usuario desde la base de datos
+// Usamos el ID del token JWT para buscar la información actualizada
+const usuario = await prisma.usuarios.findUnique({
+  where: { id: user.id },
+  select: {
+    nombre: true,
+    correo: true,
+    rol: true
+  }
+});
+
+// Si no encontramos al usuario (por ejemplo, fue eliminado), cerramos la sesión
+if (!usuario) {
+  // Borrar la cookie de sesión
+  Astro.cookies.delete("session", { path: "/" });
+  return Astro.redirect("/login?error=user_not_found");
+}
 ---
 
 <Layout>
@@ -22,15 +45,12 @@ const userData = JSON.parse(userCookie.value);
         </a>
 
         <div class="mt-8 pt-6 text-center">
-        <form action="/api/logout" method="POST">
-          <button 
-            type="submit"
-            class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-          >
-            Cerrar Sesión
+         <form action="/api/logout" method="POST" class="mt-8 space-y-4">
+          <button type="submit" class="w-full text-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+            Cerrar sesión
           </button>
         </form>
-         <h2 class="pt-4">Bienvenido {userData.nombre}</h2>
+         <h2 class="pt-4">Bienvenido {usuario.nombre}</h2>
           <!-- {userData.correo}
           {userData.rol} -->
       </div>

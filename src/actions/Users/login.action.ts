@@ -1,8 +1,8 @@
 import { defineAction } from "astro:actions";
 import { prisma } from "../../db";
 import { z } from "astro:schema";
-import bcrypt from "bcrypt";
-import { v4 as uuidv4 } from 'uuid';
+import bcrypt from "bcryptjs";
+import jwt from 'jsonwebtoken';
 
 // --- Inicio: Lógica de Rate Limiting ---
 const MAX_ATTEMPTS = 5;
@@ -86,47 +86,30 @@ export const loginUser = defineAction({
         }
       });
 
-      // Crear un ID de sesión seguro
-      const sessionId = uuidv4();
-      
-      // Establecer la cookie de sesión directamente aquí
-      cookies.set("session", sessionId, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        path: "/",
-        maxAge: 60 * 60 * 24 // 24 horas
-      });
+      // --- Inicio: Generación de JWT ---
+      const sessionExpires = new Date(Date.now() + 60 * 60 * 24 * 1000); // 24 horas
+      const token = jwt.sign(
+        {
+          id: user.id,
+          rol: user.rol,
+        },
+        import.meta.env.JWT_SECRET, // Cargar la clave secreta desde las variables de entorno
+        { expiresIn: '24h' } // El token expira en 24 horas
+      );
 
-      // Establecer la cookie de usuario
-      cookies.set("user", JSON.stringify({
-        id: user.id,
-        nombre: user.nombre,
-        correo: user.correo,
-        rol: user.rol,
-        activo: user.activo,
-        ultimo_login: user.ultimo_login
-      }), {
+      // Establecer el token JWT en la cookie
+      cookies.set("session", token, {
         httpOnly: true,
-        secure: true,
+        secure: import.meta.env.PROD, // true en producción, false en desarrollo
         sameSite: "strict",
         path: "/",
-        maxAge: 60 * 60 * 24 // 24 horas
+        expires: sessionExpires,
       });
 
       return {
         status: 200,
         body: {
           message: "Login exitoso",
-          session: sessionId,
-          user: {
-            id: user.id,
-            nombre: user.nombre,
-            correo: user.correo,
-            rol: user.rol,
-            activo: user.activo,
-            ultimo_login: user.ultimo_login
-          }
         }
       };
     } catch (error) {

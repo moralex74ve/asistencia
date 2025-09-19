@@ -1,8 +1,9 @@
-import { defineAction } from "astro:actions";
+import { defineAction, type ActionAPIContext } from "astro:actions";
 import { prisma } from "../../db";
 import { z } from 'astro:schema';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+import type { usuarios } from "@prisma/client"; // Import the User type
 
 // Esquema común para usuario
 const UserSchema = z.object({
@@ -12,33 +13,37 @@ const UserSchema = z.object({
   rol: z.enum(['usuario', 'admin']),
 });
 
+// Define a complete Locals interface for ActionAPIContext
+interface CustomActionLocals {
+  user?: usuarios;
+  // Add other properties that ActionAPIContext.locals might have if needed
+  // For now, we'll assume 'user' is the only custom property
+}
+
+// Define a custom ActionAPIContext that uses our custom Locals
+interface CustomActionAPIContext extends ActionAPIContext {
+  locals: CustomActionLocals;
+}
+
+// Función reutilizable para verificar la autorización del administrador
+function isAdmin(context: CustomActionAPIContext) { // Use the custom context type
+  const user = context.locals.user;
+  if (!user) {
+    return { success: false, status: 401, message: "No autorizado: Sesión de usuario no encontrada." };
+  }
+  if (user.rol !== 'admin') {
+    return { success: false, status: 403, message: "Prohibido: No tienes permisos de administrador." };
+  }
+  return { success: true };
+}
+
 export const createUser = defineAction({
   accept: "form",
   input: UserSchema,
-  handler: async ({ nombre, correo, clave, rol }, { cookies }) => {
-    const userCookie = cookies.get('user');
-    if (!userCookie) {
-      return {
-        status: 401,
-        body: { message: "No autorizado: Sesión de usuario no encontrada." }
-      };
-    }
-
-    let user;
-    try {
-      user = JSON.parse(userCookie.value);
-    } catch (e) {
-      return {
-        status: 401,
-        body: { message: "No autorizado: Formato de cookie de usuario inválido." }
-      };
-    }
-
-    if (user.rol !== 'admin') {
-      return {
-        status: 403,
-        body: { message: "Prohibido: No tienes permisos de administrador." }
-      };
+  handler: async ({ nombre, correo, clave, rol }, context) => {
+    const auth = isAdmin(context as CustomActionAPIContext); // Cast context here
+    if (!auth.success) {
+      return { status: auth.status, body: { message: auth.message } };
     }
 
     try {
@@ -96,34 +101,14 @@ export const createUser = defineAction({
 export const updateUser = defineAction({
   accept: "form",
   input: UserSchema.extend({
-    id: z.string(), // Assuming uuid is represented as a string
+    id: z.string(),
     activo: z.boolean().optional(),
-    clave: z.string().min(6).optional() // Hacemos la clave opcional en actualizaciones
+    clave: z.string().min(6).optional()
   }),
-  handler: async ({ id, nombre, correo, clave, rol, activo }, { cookies }) => {
-    const userCookie = cookies.get('user');
-    if (!userCookie) {
-      return {
-        status: 401,
-        body: { message: "No autorizado: Sesión de usuario no encontrada." }
-      };
-    }
-
-    let user;
-    try {
-      user = JSON.parse(userCookie.value);
-    } catch (e) {
-      return {
-        status: 401,
-        body: { message: "No autorizado: Formato de cookie de usuario inválido." }
-      };
-    }
-
-    if (user.rol !== 'admin') {
-      return {
-        status: 403,
-        body: { message: "Prohibido: No tienes permisos de administrador." }
-      };
+  handler: async ({ id, nombre, correo, clave, rol, activo }, context) => {
+    const auth = isAdmin(context as CustomActionAPIContext); // Cast context here
+    if (!auth.success) {
+      return { status: auth.status, body: { message: auth.message } };
     }
 
     try {
@@ -138,7 +123,6 @@ export const updateUser = defineAction({
         };
       }
 
-      // Preparar datos de actualización
       const updateData: any = {
         nombre,
         correo,
@@ -146,13 +130,10 @@ export const updateUser = defineAction({
         activo,
       };
 
-      // Si se proporciona una nueva contraseña, encriptarla
       if (clave && clave.trim() !== "") {
         const hashedPassword = await bcrypt.hash(clave, 10);
         updateData.clave = hashedPassword;
       }
-
-      // console.log('Datos de actualización:', updateData);
 
       const updatedUser = await prisma.usuarios.update({
         where: { id },
@@ -187,37 +168,15 @@ export const updateUser = defineAction({
 export const deleteUser = defineAction({
   accept: "form",
   input: z.object({
-    id: z.string() // Assuming uuid is represented as a string
+    id: z.string()
   }),
-  handler: async ({ id }, { cookies }): Promise<{ success: boolean; message: string }> => {
-    const userCookie = cookies.get('user');
-    if (!userCookie) {
-      return {
-        success: false,
-        message: "No autorizado: Sesión de usuario no encontrada."
-      };
-    }
-
-    let user;
-    try {
-      user = JSON.parse(userCookie.value);
-    } catch (e) {
-      return {
-        success: false,
-        message: "No autorizado: Formato de cookie de usuario inválido."
-      };
-    }
-
-    if (user.rol !== 'admin') {
-      return {
-        success: false,
-        message: "Prohibido: No tienes permisos de administrador."
-      };
+  handler: async ({ id }, context): Promise<{ success: boolean; message: string }> => {
+    const auth = isAdmin(context as CustomActionAPIContext); // Cast context here
+    if (!auth.success) {
+      return { success: false, message: auth.message };
     }
 
     try {
-      console.log('Datos recibidos:', { id });
-
       const userExists = await prisma.usuarios.findUnique({
         where: { id }
       });

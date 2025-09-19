@@ -7,6 +7,5 @@ export const server = {
   loginUser,
   createUser,
   updateUser,
-  deleteUser,
-  
+  deleteUser
 };

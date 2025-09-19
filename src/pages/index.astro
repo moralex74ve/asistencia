@@ -1,31 +1,22 @@
 ---
 import Layout from "@layouts/Layout.astro";
- export const prerender = false; 
+export const prerender = false;
 
-// Verificar la sesión
-const sessionCookie = Astro.cookies.get("session");
-const userCookie = Astro.cookies.get("user");
-
-if (!sessionCookie || !userCookie) {
-  return Astro.redirect("/login");
+// Si el usuario ya tiene una sesión, lo redirigimos al dashboard.
+const session = Astro.cookies.get("session");
+if (session) {
+  return Astro.redirect("/dashboard");
 }
-
-
 ---
 
 <Layout>
   <div class="flex flex-col items-center justify-center min-h-screen text-white">
-    <div class="border border-gray-600 rounded-lg p-8 bg-gray-800 shadow-lg">
-      <h1 class="text-3xl font-bold mb-6 text-center text-slate-100">Menu</h1>
-      <div class="flex flex-col space-y-4 w-64">
-        <a href="/listado" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded text-center transition-colors duration-300">
-          Listado de Miembros
-        </a>
-        <a href="/eventos" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded text-center transition-colors duration-300">
-          Eventos
-        </a>
-        
-      </div>
+    <div class="text-center">
+      <h1 class="text-5xl font-bold mb-4">Bienvenido</h1>
+      <p class="text-xl mb-8">Por favor, inicia sesión para continuar.</p>
+      <a href="/login" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors duration-300">
+        Login
+      </a>
     </div>
   </div>
 </Layout>
