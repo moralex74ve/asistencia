@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "prisma generate && astro build",
+    "build": "pnpm install && prisma generate && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "genere": "pnpm install @prisma/client && pnpx prisma generate"
