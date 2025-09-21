@@ -1,6 +1,8 @@
 ignoredBuiltDependencies:
   - '@parcel/watcher'
-  - '@prisma/client'
   - esbuild
   - sharp
   - workerd
+
+onlyBuiltDependencies:
+  - bcrypt
