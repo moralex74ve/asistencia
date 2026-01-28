@@ -1,9 +1,8 @@
 ---
-import { ClientRouter } from 'astro:transitions';
+import { ClientRouter } from "astro:transitions";
 import "../styles/global.css";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../const";
 import BaseHead from "../components/BaseHead.astro";
-
 ---
 
 <!doctype html>
@@ -12,8 +11,7 @@ import BaseHead from "../components/BaseHead.astro";
     <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
     <ClientRouter />
   </head>
-  <body class="container mx-auto bg-zinc-800 max-w-screen-l">
+  <body class="bg-zinc-800">
     <slot />
   </body>
 </html>
-

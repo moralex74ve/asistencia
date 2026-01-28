@@ -2,7 +2,7 @@ import { defineMiddleware } from "astro:middleware";
 import jwt from 'jsonwebtoken';
 
 // Rutas que requieren solo autenticación
-const protectedRoutes = ["/dashboard"];
+const protectedRoutes = ["/dashboard", "/listado", "/eventos", "/crear", "/editar"];
 
 // Rutas que requieren rol de administrador
 const adminRoutes = ["/users"];
@@ -28,7 +28,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   try {
     // 2. Verificar el token JWT
     const decoded = jwt.verify(token, import.meta.env.JWT_SECRET);
-    
+
     // 3. Almacenar los datos del usuario en context.locals
     // Aseguramos que el payload decodificado tiene la estructura esperada
     if (typeof decoded === 'object' && decoded !== null && 'id' in decoded && 'rol' in decoded) {
