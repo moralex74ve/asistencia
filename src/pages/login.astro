@@ -17,7 +17,6 @@ const result = Astro.getActionResult(actions.loginUser);
 if (result?.data?.status === 200) {
   return Astro.redirect("/dashboard");
 }
-
 ---
 
 <Layout title="Login">
@@ -46,7 +45,6 @@ if (result?.data?.status === 200) {
               required
               class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
               placeholder="Email"
-              
               transition:persist
             />
           </div>
@@ -63,6 +61,20 @@ if (result?.data?.status === 200) {
           </div>
         </div>
 
+        <div class="flex items-center">
+          <input
+            id="show-password"
+            type="checkbox"
+            class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+          />
+          <label
+            for="show-password"
+            class="ml-2 block text-sm text-gray-900 cursor-pointer"
+          >
+            Mostrar contraseña
+          </label>
+        </div>
+
         <div>
           <button
             type="submit"
@@ -73,12 +85,34 @@ if (result?.data?.status === 200) {
         </div>
       </form>
 
-        {Astro.url.searchParams.get('logout') === 'success' && (
+      {
+        Astro.url.searchParams.get("logout") === "success" && (
           <div class="mb-4 p-3 bg-green-100 text-green-700 rounded text-center">
             Has cerrado sesión correctamente.
           </div>
-)}
+        )
+      }
     </div>
-    
   </main>
+
+  <script>
+    function setupShowPassword() {
+      const checkbox = document.getElementById(
+        "show-password",
+      ) as HTMLInputElement;
+      const passwordInput = document.getElementById(
+        "clave",
+      ) as HTMLInputElement;
+
+      if (checkbox && passwordInput) {
+        checkbox.addEventListener("change", () => {
+          passwordInput.type = checkbox.checked ? "text" : "password";
+        });
+      }
+    }
+
+    // Inicializar en carga normal y en navegaciones de Astro
+    setupShowPassword();
+    document.addEventListener("astro:page-load", setupShowPassword);
+  </script>
 </Layout>
