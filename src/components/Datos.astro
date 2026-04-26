@@ -4,32 +4,62 @@ import { prisma } from "../db";
 const { role } = Astro.props;
 const isUser = role === "usuario";
 
-// Fetch both members and all available zones in parallel
-const [miembros, zonas] = await Promise.all([
-  prisma.miembros.findMany({
-    include: {
-      zonas: true, // Include related zone data for display
-    },
-    orderBy: {
-      nombre: "asc",
-    },
-  }),
-  prisma.zonas.findMany({
-    where: {
-      miembros: {
-        some: {}, // Only fetch zones that have at least one member
+// 1. Obtener los IDs de los últimos 40 eventos globales para el historial reciente
+const ultimosEventos = await prisma.evento.findMany({
+  orderBy: { fecha: 'desc' },
+  take: 40,
+  select: { id: true }
+});
+const idsUltimos = ultimosEventos.map(e => e.id);
+
+// 2. Obtener miembros con sus asistencias recientes
+const miembrosRaw = await prisma.miembros.findMany({
+  include: {
+    zonas: true,
+    asistencia: {
+      include: {
+        evento: {
+          select: { id: true, fecha: true, nombre: true }
+        }
       },
+      orderBy: { evento: { fecha: 'desc' } },
+      take: 20 // Suficiente para ver el historial reciente de cada uno
     },
-    orderBy: {
-      nombre_zona: "asc",
-    },
-  }),
-]);
+    _count: {
+      select: { asistencia: true }
+    }
+  },
+  orderBy: { nombre: "asc" },
+});
+
+// 3. Procesar datos para el frontend
+const miembrosData = miembrosRaw.map(m => {
+  return {
+    id: m.id,
+    nombre: m.nombre,
+    apellido: m.apellido,
+    cedula: m.cedula,
+    telef: m.telef,
+    status: m.status,
+    zona_id: m.zona_id,
+    zonas: m.zonas,
+    // La primera es la más reciente por el orderBy desc en la consulta
+    ultima_asistencia: m.asistencia.length > 0 ? m.asistencia[0].evento.fecha : null,
+    total_asistencias: m._count.asistencia
+  };
+});
+
+// Obtener todas las zonas con miembros
+const zonas = await prisma.zonas.findMany({
+  where: {
+    miembros: { some: {} },
+  },
+  orderBy: { nombre_zona: "asc" },
+});
 ---
 
 <div class="mb-4 w-full p-4 bg-slate-800 rounded-lg">
   <div class="flex flex-wrap items-center gap-x-4 gap-y-3">
-    <!-- Search and Add Button -->
     <div
       class="flex-grow flex flex-wrap sm:flex-nowrap items-center gap-x-4 gap-y-3"
     >
@@ -104,6 +134,17 @@ const [miembros, zonas] = await Promise.all([
           ))
         }
       </select>
+
+      <select
+        id="inactividad-filter-select"
+        class="flex-shrink-0 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:w-auto"
+      >
+        <option value="all">Todos</option>
+        <option value="sin_registro_15">Sin asistencia últimos 15 días</option>
+        <option value="sin_registro_30">Sin asistencia últimos 30 días</option>
+        <option value="sin_registro_60">Sin asistencia últimos 60 días o más</option>
+        <option value="nunca">Nunca ha asistido</option>
+      </select>
     </div>
 
     <!-- Counter -->
@@ -113,7 +154,7 @@ const [miembros, zonas] = await Promise.all([
           >Registros:</span
         >
         <span id="record-counter-value" class="font-bold text-slate-50"
-          >{miembros.length}</span
+          >{miembrosData.length}</span
         >
       </div>
     </div>
@@ -149,17 +190,23 @@ const [miembros, zonas] = await Promise.all([
         >
         <th
           class="whitespace-nowrap px-4 py-2 font-medium text-left text-slate-50"
+          >Última Asistencia</th
+        >
+        <th
+          class="whitespace-nowrap px-4 py-2 font-medium text-left text-slate-50"
           style="min-width: 170px;">Acciones</th
         >
       </tr>
     </thead>
     <tbody id="miembros-table-body" class="divide-y divide-gray-700">
       {
-        miembros.map((miembro) => (
+        miembrosData.map((miembro) => (
           <tr
             data-miembro-id={miembro.id}
             data-status={miembro.status ? "activo" : "inactivo"}
             data-zona-id={miembro.zona_id}
+            data-ultima-asistencia={miembro.ultima_asistencia ? new Date(miembro.ultima_asistencia).toISOString() : ""}
+            data-total-asistencias={miembro.total_asistencias}
             class="text-slate-50"
           >
             <td class="px-4 py-2 font-medium">
@@ -185,6 +232,11 @@ const [miembros, zonas] = await Promise.all([
             </td>
             <td class="whitespace-nowrap px-4 py-2 text-gray-400">
               {miembro.zonas.nombre_zona}
+            </td>
+            <td class="whitespace-nowrap px-4 py-2 text-gray-400">
+              {miembro.ultima_asistencia
+                ? new Date(miembro.ultima_asistencia).toLocaleDateString('es-ES', { timeZone: 'UTC' })
+                : <span class="text-red-400">Nunca</span>}
             </td>
             <td class="whitespace-nowrap px-4 py-2" style="min-width: 160px;">
               <div class="flex items-center gap-2">
@@ -226,6 +278,8 @@ const [miembros, zonas] = await Promise.all([
     const statusCheckbox = document.getElementById("status-filter-checkbox");
     /** @type {HTMLSelectElement | null} */
     const zonaSelect = document.getElementById("zona-filter-select");
+    /** @type {HTMLSelectElement | null} */
+    const inactividadSelect = document.getElementById("inactividad-filter-select");
     /** @type {HTMLTableSectionElement | null} */
     const tableBody = document.getElementById("miembros-table-body");
     /** @type {HTMLSpanElement | null} */
@@ -262,30 +316,65 @@ const [miembros, zonas] = await Promise.all([
       const zonaSelect = document.getElementById(
         "zona-filter-select",
       ) as HTMLSelectElement;
+      const inactividadSelect = document.getElementById(
+        "inactividad-filter-select",
+      ) as HTMLSelectElement;
 
-      if (!filterInput || !statusCheckbox || !zonaSelect) return;
+      if (!filterInput || !statusCheckbox || !zonaSelect || !inactividadSelect) return;
 
       const searchTerm = filterInput.value.toLowerCase();
       const showInactive = statusCheckbox.checked;
       const selectedZona = zonaSelect.value;
+      const selectedInactividad = inactividadSelect.value;
       let visibleRows = 0;
 
       for (const row of allRows) {
         const rowStatus = row.dataset.status;
         const rowZonaId = row.dataset.zonaId;
+        const rowUltimaAsistencia = row.dataset.ultimaAsistencia;
+        const rowTotalAsistencias = parseInt(row.dataset.totalAsistencias || "0", 10);
         const nameCell = row.cells[0];
         const cedulaCell = row.cells[1];
 
-        // Conditions for visibility
+        // Filter by status
         const matchesStatus = showInactive || rowStatus === "activo";
+
+        // Filter by zona
         const matchesZona =
           selectedZona === "all" || rowZonaId === selectedZona;
+
+        // Filter by search
         const matchesSearch =
           !searchTerm ||
           nameCell?.textContent?.toLowerCase().includes(searchTerm) ||
           cedulaCell?.textContent?.toLowerCase().includes(searchTerm);
 
-        if (matchesStatus && matchesZona && matchesSearch) {
+        // Filter by inactividad (basado en tiempo)
+        let matchesInactividad = true;
+        const today = new Date();
+        const lastDate = rowUltimaAsistencia ? new Date(rowUltimaAsistencia) : null;
+
+        if (selectedInactividad === "sin_registro_15") {
+          // No ha venido en los últimos 15 días
+          const fifteenDaysAgo = new Date();
+          fifteenDaysAgo.setDate(today.getDate() - 15);
+          matchesInactividad = !lastDate || lastDate < fifteenDaysAgo;
+        } else if (selectedInactividad === "sin_registro_30") {
+          // No ha venido en los últimos 30 días
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(today.getDate() - 30);
+          matchesInactividad = !lastDate || lastDate < thirtyDaysAgo;
+        } else if (selectedInactividad === "sin_registro_60") {
+          // No ha venido en los últimos 60 días
+          const sixtyDaysAgo = new Date();
+          sixtyDaysAgo.setDate(today.getDate() - 60);
+          matchesInactividad = !lastDate || lastDate < sixtyDaysAgo;
+        } else if (selectedInactividad === "nunca") {
+          // Nunca ha asistido
+          matchesInactividad = rowTotalAsistencias === 0;
+        }
+
+        if (matchesStatus && matchesZona && matchesSearch && matchesInactividad) {
           row.style.display = "";
           visibleRows++;
         } else {
@@ -361,6 +450,7 @@ const [miembros, zonas] = await Promise.all([
       clearFilterBtn.addEventListener("click", clearSearchInput);
       statusCheckbox.addEventListener("change", applyFilters);
       zonaSelect.addEventListener("change", applyFilters);
+      inactividadSelect.addEventListener("change", applyFilters);
       tableBody.addEventListener("click", handleTableClick);
       filterInput.dataset.initialized = "true";
     }
