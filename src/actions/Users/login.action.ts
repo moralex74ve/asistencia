@@ -35,7 +35,7 @@ export const loginUser = defineAction({
     }
     // --- Fin de Verificación ---
 
-    console.log(`Intentando login con: ${correo} desde IP: ${ip}`);
+    console.log(`Intentando login`);
     try {
       const user = await prisma.usuarios.findUnique({
         where: {

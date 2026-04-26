@@ -106,6 +106,7 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
         >Miembros en este evento:</span
       >
       <span
+        id="attendee-count"
         class="bg-blue-900 text-blue-200 text-sm font-bold px-2.5 py-0.5 rounded-full"
         >{miembrosEnAsistencia.length}</span
       >
@@ -313,17 +314,27 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
           class="text-2xl font-bold p-1 hover:text-red-500">&times;</button
         >
       </div>
-      <ul class="space-y-2 max-h-96 overflow-y-auto">
+      <ul id="attendee-list" class="space-y-2 max-h-96 overflow-y-auto">
         {
           miembrosEnAsistencia.map((asistencia) => (
-            <li class="bg-slate-700 p-3 rounded-md text-xs lg:text-md">
-              {asistencia.miembros.nombre} {asistencia.miembros.apellido}
+            <li class="bg-slate-700 p-3 rounded-md text-xs lg:text-md flex justify-between items-center">
+              <span>{asistencia.miembros.nombre} {asistencia.miembros.apellido}</span>
+              <button
+                type="button"
+                class="remove-attendee-btn text-red-400 hover:text-red-300 p-1"
+                data-asistencia-id={asistencia.id}
+                title="Quitar del evento"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </button>
             </li>
           ))
         }
         {
           miembrosEnAsistencia.length === 0 && (
-            <li class="text-gray-400 text-center p-4">
+            <li id="no-attendees-msg" class="text-gray-400 text-center p-4">
               Aún no hay miembros en este evento.
             </li>
           )
@@ -451,6 +462,35 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
 
       applyFilters();
       handleSearchInput();
+
+      // Remove attendee functionality
+      const removeButtons = document.querySelectorAll('.remove-attendee-btn');
+      removeButtons.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const button = e.currentTarget as HTMLButtonElement;
+          const asistenciaId = button.dataset.asistenciaId;
+
+          if (!confirm('¿Está seguro de que desea quitar a este miembro del evento?')) {
+            return;
+          }
+
+          try {
+            const response = await fetch(`/api/asistencia/${asistenciaId}`, {
+              method: 'DELETE'
+            });
+
+            if (response.ok) {
+              // Refresh the page to update the table
+              window.location.reload();
+            } else {
+              alert('Error al eliminar');
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            alert('Error al eliminar');
+          }
+        });
+      });
     }
 
     document.addEventListener("astro:page-load", initializePage);

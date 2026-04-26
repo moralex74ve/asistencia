@@ -35,3 +35,8 @@ pnpm-debug.log*
 /generated/prisma
 
 /generated/prisma
+
+# Tool-specific files
+.claude/
+.openclaude-profile.json
+opencode.json

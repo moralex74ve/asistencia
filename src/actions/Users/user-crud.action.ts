@@ -3,7 +3,6 @@ import { prisma } from "../../db";
 import { z } from 'astro:schema';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import type { usuarios } from "@prisma/client"; // Import the User type
 
 // Esquema común para usuario
 const UserSchema = z.object({
@@ -13,20 +12,22 @@ const UserSchema = z.object({
   rol: z.enum(['usuario', 'admin']),
 });
 
-// Define a complete Locals interface for ActionAPIContext
-interface CustomActionLocals {
-  user?: usuarios;
-  // Add other properties that ActionAPIContext.locals might have if needed
-  // For now, we'll assume 'user' is the only custom property
+// Tipo correcto para locals.user (viene del JWT en el middleware)
+interface JWTUser {
+  id: string;
+  rol: string;
 }
 
-// Define a custom ActionAPIContext that uses our custom Locals
+interface CustomActionLocals {
+  user?: JWTUser;
+}
+
 interface CustomActionAPIContext extends ActionAPIContext {
   locals: CustomActionLocals;
 }
 
 // Función reutilizable para verificar la autorización del administrador
-function isAdmin(context: CustomActionAPIContext) { // Use the custom context type
+function isAdmin(context: CustomActionAPIContext) {
   const user = context.locals.user;
   if (!user) {
     return { success: false, status: 401, message: "No autorizado: Sesión de usuario no encontrada." };
