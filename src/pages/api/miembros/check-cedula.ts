@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 
 export const GET: APIRoute = async ({ url, cookies }) => {
   const cedula = url.searchParams.get("cedula");
+  const excludeId = url.searchParams.get("excludeId");
 
   if (!cedula) {
     return new Response(
@@ -40,9 +41,12 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   }
 
   try {
-    const existing = await prisma.miembros.findUnique({
-      where: { cedula },
-      select: { id: true, nombre: true, apellido: true },
+    const existing = await prisma.miembros.findFirst({
+      where: {
+        cedula,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+      select: { id: true },
     });
 
     return new Response(JSON.stringify({ exists: !!existing }), {

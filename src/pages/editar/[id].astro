@@ -1,6 +1,7 @@
 ---
 import Layout from '@layouts/Layout.astro';
 import { prisma } from '../../db';
+import { Prisma } from '@prisma/client';
 
 export const prerender = false;
 
@@ -18,18 +19,21 @@ if (!miembro) {
   return Astro.redirect("/404");
 }
 
+const isPendiente = miembro.cedula?.startsWith('Pend-') ?? false;
+
 if (Astro.request.method === "POST") {
   try {
     const data = await Astro.request.formData();
-    const nombre = data.get("nombre") as string;
-    const apellido = data.get("apellido") as string;
-    const cedula = data.get("cedula") as string;
-    const direccion = data.get("direccion") as string;
-    const telef = data.get("telef") as string;
-    const telf_2 = data.get("telf_2") as string;
+    const nombre = (data.get("nombre") ?? '') as string;
+    const apellido = (data.get("apellido") ?? '') as string;
+    const cedula = (data.get("cedula") ?? '') as string;
+    const direccion = (data.get("direccion") ?? '') as string;
+    const telef = (data.get("telef") ?? '') as string;
+    const telf_2 = (data.get("telf_2") ?? '') as string;
     const status = data.get("status") === "on";
-    const zonaId = data.get("zonaId") as string;
+    const zonaId = (data.get("zonaId") ?? '') as string;
     const kids = data.get("kids") === "on";
+    const pendiente = data.get("pendiente") === "on";
 
     if (!nombre || !apellido || !cedula || !zonaId) {
       throw new Error("Nombre, Apellido, Cédula y Zona son campos requeridos.");
@@ -39,7 +43,7 @@ if (Astro.request.method === "POST") {
       if (!str) return '';
       return str
         .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ');
     };
 
@@ -60,7 +64,11 @@ if (Astro.request.method === "POST") {
     return Astro.redirect("/listado");
   } catch (error) {
     console.error(error);
-    errorMessage = `Error al actualizar el miembro: ${error.message}`;
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      errorMessage = 'La cédula introducida ya existe. Por favor, verifíquela.';
+    } else {
+      errorMessage = `Error al actualizar el miembro: ${error.message}`;
+    }
   }
 }
 ---
@@ -92,27 +100,29 @@ if (Astro.request.method === "POST") {
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label for="cedula" class="block text-sm font-medium text-gray-700">Cédula</label>
-          <input type="text" name="cedula" id="cedula" value={miembro.cedula} required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          <div class="flex gap-2">
+            <input type="text" name="cedula" id="cedula" value={miembro.cedula} required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            <button type="button" id="buscar-cedula-btn" title="Buscar cédula" class="mt-1 flex-shrink-0 inline-flex items-center justify-center h-10 w-10 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+            <button type="button" id="clear-cedula-btn" title="Limpiar campos" class="mt-1 flex-shrink-0 inline-flex items-center justify-center h-10 w-10 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <div class="flex items-center mt-6">
-          <input type="checkbox" name="kids" id="kids" checked={miembro.kids} class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-          <label for="kids" class="ml-2 block text-sm text-gray-900">Niño</label>
-        </div>
-      </div>
-
-      <div>
-        <label for="direccion" class="block text-sm font-medium text-gray-700">Dirección</label>
-        <textarea name="direccion" id="direccion" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">{miembro.direccion}</textarea>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label for="telef" class="block text-sm font-medium text-gray-700">Teléfono</label>
-          <input type="text" name="telef" id="telef" value={miembro.telef} class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <div>
-          <label for="telf_2" class="block text-sm font-medium text-gray-700">Teléfono 2 (Opcional)</label>
-          <input type="text" name="telf_2" id="telf_2" value={miembro.telf_2} class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        <div class="flex items-center mt-6 gap-4">
+          <div class="flex items-center">
+            <input type="checkbox" name="kids" id="kids" checked={miembro.kids} data-miembro-id={miembro.id} class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+            <label for="kids" class="ml-2 block text-sm text-gray-900">Niño</label>
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox" name="pendiente" id="pendiente" checked={isPendiente} class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+            <label for="pendiente" class="ml-2 block text-sm text-gray-900">Pendiente</label>
+          </div>
         </div>
       </div>
 
@@ -123,6 +133,22 @@ if (Astro.request.method === "POST") {
             <option value={zona.id} selected={zona.id === miembro.zona_id}>{zona.nombre_zona}</option>
           ))}
         </select>
+      </div>
+
+      <div>
+        <label for="direccion" class="block text-sm font-medium text-gray-700">Dirección</label>
+        <textarea name="direccion" id="direccion" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">{miembro.direccion}</textarea>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label for="telef" class="block text-sm font-medium text-gray-700">Celular</label>
+          <input type="text" name="telef" id="telef" value={miembro.telef} class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div>
+          <label for="telf_2" class="block text-sm font-medium text-gray-700">Teléfono 2 (Opcional)</label>
+          <input type="text" name="telf_2" id="telf_2" value={miembro.telf_2} class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
       </div>
 
       <div class="flex items-center">
@@ -139,15 +165,107 @@ if (Astro.request.method === "POST") {
 </Layout>
 
 <script>
-  const kidsCheckbox = document.getElementById('kids') as HTMLInputElement;
-  const cedulaInput = document.getElementById('cedula') as HTMLInputElement;
+  document.addEventListener('astro:page-load', () => {
+    const kidCheckbox = document.getElementById('kids');
+    const pendienteCheckbox = document.getElementById('pendiente');
+    const cedulaInput = document.getElementById('cedula');
+    const buscarBtn = document.getElementById('buscar-cedula-btn');
+    const clearCedulaBtn = document.getElementById('clear-cedula-btn');
+    const nombreInput = document.getElementById('nombre');
+    const apellidoInput = document.getElementById('apellido');
 
-  kidsCheckbox.addEventListener('change', () => {
-    if (kidsCheckbox.checked) {
-      const randomNumber = Math.floor(1000 + Math.random() * 9000);
-      cedulaInput.value = `kids-${randomNumber}`;
-    } else {
-      cedulaInput.value = '';
+    if (clearCedulaBtn && cedulaInput && !clearCedulaBtn.dataset.initialized) {
+      clearCedulaBtn.addEventListener('click', () => {
+        cedulaInput.value = '';
+        if (nombreInput) nombreInput.value = '';
+        if (apellidoInput) apellidoInput.value = '';
+        kidCheckbox.checked = false;
+        pendienteCheckbox.checked = false;
+      });
+      clearCedulaBtn.dataset.initialized = 'true';
+    }
+
+    if (buscarBtn && cedulaInput && !buscarBtn.dataset.initialized) {
+      buscarBtn.addEventListener('click', async () => {
+        const cedula = cedulaInput.value.trim();
+        if (!cedula) {
+          alert('Ingrese una cédula para buscar.');
+          return;
+        }
+
+        buscarBtn.disabled = true;
+        buscarBtn.innerHTML = '<svg class="animate-spin h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>';
+
+        try {
+          const checkRes = await fetch(`/api/miembros/check-cedula?cedula=${encodeURIComponent(cedula)}&excludeId=${kidCheckbox.dataset.miembroId || ''}`);
+          const checkData = await checkRes.json();
+
+          if (checkData.exists) {
+            alert('Esta cédula ya está registrada en el sistema.');
+            return;
+          }
+
+          const apiRes = await fetch(`https://scrapi-cedula.onrender.com/api/verificar?cedula=${encodeURIComponent(cedula)}`);
+          if (!apiRes.ok) {
+            alert('Cédula no encontrada en el registro civil.');
+            return;
+          }
+
+          const apiData = await apiRes.json();
+
+          const capitalize = (str) => {
+            if (!str) return '';
+            return str
+              .replace(/\s*-\s*$/, '')
+              .trim()
+              .split(' ')
+              .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+              .join(' ');
+          };
+
+          if (nombreInput && apiData.nombres) {
+            nombreInput.value = capitalize(apiData.nombres);
+          }
+          if (apellidoInput && apiData.primer_apellido) {
+            const segundo = apiData.segundo_apellido ? ` ${capitalize(apiData.segundo_apellido)}` : '';
+            apellidoInput.value = capitalize(apiData.primer_apellido) + segundo;
+          }
+
+        } catch (error) {
+          console.error('Error al buscar cédula:', error);
+          alert('Error al consultar la cédula. Intente nuevamente.');
+        } finally {
+          buscarBtn.disabled = false;
+          buscarBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>';
+        }
+      });
+      buscarBtn.dataset.initialized = 'true';
+    }
+
+    if (kidCheckbox && cedulaInput && !kidCheckbox.dataset.initialized) {
+      kidCheckbox.addEventListener('change', () => {
+        if (kidCheckbox.checked) {
+          pendienteCheckbox.checked = false;
+          const randomNumber = Math.floor(1000 + Math.random() * 9000);
+          cedulaInput.value = `kids-${randomNumber}`;
+        } else {
+          cedulaInput.value = '';
+        }
+      });
+      kidCheckbox.dataset.initialized = 'true';
+    }
+
+    if (pendienteCheckbox && cedulaInput && !pendienteCheckbox.dataset.initialized) {
+      pendienteCheckbox.addEventListener('change', () => {
+        if (pendienteCheckbox.checked) {
+          kidCheckbox.checked = false;
+          const randomNumber = Math.floor(1000 + Math.random() * 9000);
+          cedulaInput.value = `Pend-${randomNumber}`;
+        } else {
+          cedulaInput.value = '';
+        }
+      });
+      pendienteCheckbox.dataset.initialized = 'true';
     }
   });
 </script>
