@@ -8,11 +8,22 @@ export const prerender = false;
 let errorMessage = "";
 const { id } = Astro.params;
 
-const [miembro, zonas] = await Promise.all([
+// Capturar filtros del listado para preservarlos al regresar
+const filtrosParams = new URLSearchParams();
+for (const [key, value] of Astro.url.searchParams) {
+  if (["search", "status", "zona", "equipo", "inactividad"].includes(key) && value) {
+    filtrosParams.set(key, value);
+  }
+}
+const filtrosQS = filtrosParams.toString();
+const listadoUrl = filtrosQS ? `/listado?${filtrosQS}` : "/listado";
+
+const [miembro, zonas, equipos] = await Promise.all([
   prisma.miembros.findUnique({
     where: { id: (id) },
   }),
   prisma.zonas.findMany({ orderBy: { nombre_zona: 'asc' } }),
+  prisma.equipos.findMany({ orderBy: { des_equipo: 'asc' } }),
 ]);
 
 if (!miembro) {
@@ -32,11 +43,14 @@ if (Astro.request.method === "POST") {
     const telf_2 = (data.get("telf_2") ?? '') as string;
     const status = data.get("status") === "on";
     const zonaId = (data.get("zonaId") ?? '') as string;
+    const equipoId = (data.get("equipoId") ?? '') as string;
+    const discipulado = (data.get("discipulado") ?? '') as string;
+    const bautizado = data.get("bautizado") === "on";
     const kids = data.get("kids") === "on";
     const pendiente = data.get("pendiente") === "on";
 
-    if (!nombre || !apellido || !cedula || !zonaId) {
-      throw new Error("Nombre, Apellido, Cédula y Zona son campos requeridos.");
+    if (!nombre || !apellido || !cedula || !zonaId || !equipoId || !discipulado) {
+      throw new Error("Nombre, Apellido, Cédula, Zona, Equipo y Discipulado son campos requeridos.");
     }
 
     const capitalize = (str: string) => {
@@ -58,10 +72,13 @@ if (Astro.request.method === "POST") {
         telf_2,
         status,
         zona_id: zonaId,
+        equipo_id: equipoId,
+        discipulado,
+        bautizado,
         kids,
       },
     });
-    return Astro.redirect("/listado");
+    return Astro.redirect(listadoUrl);
   } catch (error) {
     console.error(error);
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -136,6 +153,34 @@ if (Astro.request.method === "POST") {
       </div>
 
       <div>
+        <label for="equipoId" class="block text-sm font-medium text-gray-700">Equipo</label>
+        <select name="equipoId" id="equipoId" required class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          <option value="" disabled selected={!miembro.equipo_id}>Selecciona un equipo</option>
+          {equipos.map(equipo => (
+            <option value={equipo.id} selected={equipo.id === miembro.equipo_id}>{equipo.cod_equipo} - {equipo.des_equipo}</option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label for="discipulado" class="block text-sm font-medium text-gray-700">Discipulado</label>
+        <select name="discipulado" id="discipulado" required class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          <option value="s" selected={miembro.discipulado === 's'}>Sí</option>
+          <option value="n" selected={miembro.discipulado === 'n'}>No</option>
+          <option value="a" selected={miembro.discipulado === 'a'}>Aprobado</option>
+          <option value="p" selected={miembro.discipulado === 'p'}>Pendiente</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="bautizado" class="block text-sm font-medium text-gray-700">Bautizado</label>
+        <div class="flex items-center mt-1">
+          <input type="checkbox" name="bautizado" id="bautizado" checked={miembro.bautizado} class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+          <label for="bautizado" class="ml-2 block text-sm text-gray-900">Sí</label>
+        </div>
+      </div>
+
+      <div>
         <label for="direccion" class="block text-sm font-medium text-gray-700">Dirección</label>
         <textarea name="direccion" id="direccion" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">{miembro.direccion}</textarea>
       </div>
@@ -157,7 +202,7 @@ if (Astro.request.method === "POST") {
       </div>
 
       <div class="flex justify-end gap-4">
-        <a href="/listado" class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">Cancelar</a>
+        <a href={listadoUrl} class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">Cancelar</a>
         <button type="submit" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">Actualizar</button>
       </div>
     </form>
@@ -173,6 +218,9 @@ if (Astro.request.method === "POST") {
     const clearCedulaBtn = document.getElementById('clear-cedula-btn');
     const nombreInput = document.getElementById('nombre');
     const apellidoInput = document.getElementById('apellido');
+    const equipoSelect = document.getElementById('equipoId');
+    const discipuladoSelect = document.getElementById('discipulado');
+    const bautizadoCheckbox = document.getElementById('bautizado');
 
     if (clearCedulaBtn && cedulaInput && !clearCedulaBtn.dataset.initialized) {
       clearCedulaBtn.addEventListener('click', () => {
@@ -181,6 +229,9 @@ if (Astro.request.method === "POST") {
         if (apellidoInput) apellidoInput.value = '';
         kidCheckbox.checked = false;
         pendienteCheckbox.checked = false;
+        if (equipoSelect) equipoSelect.value = '';
+        if (discipuladoSelect) discipuladoSelect.value = 'n';
+        if (bautizadoCheckbox) bautizadoCheckbox.checked = false;
       });
       clearCedulaBtn.dataset.initialized = 'true';
     }

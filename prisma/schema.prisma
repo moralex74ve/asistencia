@@ -14,10 +14,18 @@ model asistencia {
   miembro_id String   @db.Uuid
   evento_id  String   @db.Uuid
   presente   Boolean  @default(false)
-  evento     evento   @relation(fields: [evento_id], references: [id], onDelete: Cascade, map: "Asistencia_evento_id_fkey")
-  miembros   miembros @relation(fields: [miembro_id], references: [id], onDelete: Cascade, map: "Asistencia_miembro_id_fkey")
+  evento     evento   @relation(fields: [evento_id], references: [id], onDelete: Cascade)
+  miembros   miembros @relation(fields: [miembro_id], references: [id], onDelete: Cascade)
 
   @@unique([miembro_id, evento_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model equipos {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cod_equipo String   @unique
+  des_equipo String
+  miembros   miembros[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -30,18 +38,22 @@ model evento {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model miembros {
-  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nombre     String
-  apellido   String
-  cedula     String       @unique
-  direccion  String?
-  telef      String?
-  telf_2     String?
-  status     Boolean      @default(true)
-  zona_id    String       @db.Uuid
-  kids       Boolean?     @default(false)
-  asistencia asistencia[]
-  zonas      zonas        @relation(fields: [zona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre      String
+  apellido    String
+  cedula      String   @unique
+  direccion   String?
+  telef       String?
+  telf_2      String?
+  status      Boolean  @default(true)
+  zona_id     String   @db.Uuid
+  kids        Boolean? @default(false)
+  equipo_id   String   @db.Uuid
+  discipulado String   @db.Char(1)
+  bautizado   Boolean  @default(false)
+  asistencia  asistencia[]
+  equipo     equipos @relation(fields: [equipo_id], references: [id])
+  zonas       zonas    @relation(fields: [zona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.

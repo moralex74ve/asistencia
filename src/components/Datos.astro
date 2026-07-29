@@ -16,6 +16,7 @@ const idsUltimos = ultimosEventos.map(e => e.id);
 const miembrosRaw = await prisma.miembros.findMany({
   include: {
     zonas: true,
+    equipo: true,
     asistencia: {
       include: {
         evento: {
@@ -42,6 +43,10 @@ const miembrosData = miembrosRaw.map(m => {
     telef: m.telef,
     status: m.status,
     zona_id: m.zona_id,
+    equipo_id: m.equipo_id,
+    equipo: m.equipo,
+    discipulado: m.discipulado,
+    bautizado: m.bautizado,
     zonas: m.zonas,
     // La primera es la más reciente por el orderBy desc en la consulta
     ultima_asistencia: m.asistencia.length > 0 ? m.asistencia[0].evento.fecha : null,
@@ -56,6 +61,30 @@ const zonas = await prisma.zonas.findMany({
   },
   orderBy: { nombre_zona: "asc" },
 });
+
+// Obtener todos los equipos
+const equipos = await prisma.equipos.findMany({
+  orderBy: { des_equipo: "asc" },
+});
+
+// Leer filtros actuales de la URL para preservarlos al navegar
+const url = Astro.url;
+const filtros = {
+  search: url.searchParams.get("search") || "",
+  status: url.searchParams.get("status") || "",
+  zona: url.searchParams.get("zona") || "",
+  equipo: url.searchParams.get("equipo") || "",
+  inactividad: url.searchParams.get("inactividad") || "",
+};
+
+// Construir query string base para enlaces de edición
+const filtrosParams = new URLSearchParams();
+if (filtros.search) filtrosParams.set("search", filtros.search);
+if (filtros.status) filtrosParams.set("status", filtros.status);
+if (filtros.zona) filtrosParams.set("zona", filtros.zona);
+if (filtros.equipo) filtrosParams.set("equipo", filtros.equipo);
+if (filtros.inactividad) filtrosParams.set("inactividad", filtros.inactividad);
+const filtrosQS = filtrosParams.toString();
 ---
 
 <div class="mb-4 w-full p-4 bg-slate-800 rounded-lg">
@@ -136,6 +165,18 @@ const zonas = await prisma.zonas.findMany({
       </select>
 
       <select
+        id="equipo-filter-select"
+        class="flex-shrink-0 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:w-auto"
+      >
+        <option value="all">Todos los equipos</option>
+        {
+          equipos.map((equipo) => (
+            <option value={equipo.id}>{equipo.cod_equipo} - {equipo.des_equipo}</option>
+          ))
+        }
+      </select>
+
+      <select
         id="inactividad-filter-select"
         class="flex-shrink-0 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:w-auto"
       >
@@ -169,31 +210,43 @@ const zonas = await prisma.zonas.findMany({
     <thead class="bg-slate-900">
       <tr>
         <th
-          class="whitespace-nowrap px-4 py-2 font-medium text-left text-slate-50"
+          class="whitespace-nowrap px-2 py-1 font-medium text-left text-slate-50"
           >Nombre y Apellido</th
         >
         <th
-          class="whitespace-nowrap px-4 py-2 font-medium text-left text-slate-50"
+          class="whitespace-nowrap px-2 py-1 font-medium text-left text-slate-50"
           >Cédula</th
         >
         <th
-          class="whitespace-nowrap px-4 py-2 font-medium text-left text-slate-50"
+          class="whitespace-nowrap px-2 py-1 font-medium text-left text-slate-50"
           >Teléfono</th
         >
         <th
-          class="whitespace-nowrap px-4 py-2 font-medium text-left text-slate-50"
+          class="whitespace-nowrap px-2 py-1 font-medium text-left text-slate-50"
           >Status</th
         >
         <th
-          class="whitespace-nowrap px-4 py-2 font-medium text-left text-slate-50"
+          class="whitespace-nowrap px-1 py-1 font-medium text-left text-slate-50 text-xs"
           >Zona</th
         >
         <th
-          class="whitespace-nowrap px-4 py-2 font-medium text-left text-slate-50"
+          class="whitespace-nowrap px-2 py-1 font-medium text-left text-slate-50"
+          >Equipo</th
+        >
+        <th
+          class="whitespace-nowrap px-1 py-1 font-medium text-center text-slate-50"
+          >Disc.</th
+        >
+        <th
+          class="whitespace-nowrap px-1 py-1 font-medium text-center text-slate-50"
+          >Baut.</th
+        >
+        <th
+          class="whitespace-nowrap px-2 py-1 font-medium text-left text-slate-50"
           >Última Asistencia</th
         >
         <th
-          class="whitespace-nowrap px-4 py-2 font-medium text-left text-slate-50"
+          class="whitespace-nowrap px-2 py-1 font-medium text-left text-slate-50"
           style="min-width: 170px;">Acciones</th
         >
       </tr>
@@ -205,20 +258,21 @@ const zonas = await prisma.zonas.findMany({
             data-miembro-id={miembro.id}
             data-status={miembro.status ? "activo" : "inactivo"}
             data-zona-id={miembro.zona_id}
+            data-equipo-id={miembro.equipo_id}
             data-ultima-asistencia={miembro.ultima_asistencia ? new Date(miembro.ultima_asistencia).toISOString() : ""}
             data-total-asistencias={miembro.total_asistencias}
             class="text-slate-50"
           >
-            <td class="px-4 py-2 font-medium">
+            <td class="px-2 py-1 font-medium">
               {miembro.nombre} {miembro.apellido}
             </td>
-            <td class="whitespace-nowrap px-4 py-2 text-gray-400">
+            <td class="whitespace-nowrap px-2 py-1 text-gray-400">
               {miembro.cedula}
             </td>
-            <td class="whitespace-nowrap px-4 py-2 text-gray-400">
+            <td class="whitespace-nowrap px-2 py-1 text-gray-400">
               {miembro.telef || "N/A"}
             </td>
-            <td class="whitespace-nowrap px-4 py-2 text-gray-400">
+            <td class="whitespace-nowrap px-2 py-1 text-gray-400">
               <span
                 class:list={[
                   "px-2 py-1 rounded-full text-xs font-semibold",
@@ -230,18 +284,27 @@ const zonas = await prisma.zonas.findMany({
                 {miembro.status ? "Activo" : "Inactivo"}
               </span>
             </td>
-            <td class="whitespace-nowrap px-4 py-2 text-gray-400">
+            <td class="whitespace-nowrap px-1 py-1 text-gray-400 text-xs">
               {miembro.zonas.nombre_zona}
             </td>
-            <td class="whitespace-nowrap px-4 py-2 text-gray-400">
+            <td class="whitespace-nowrap px-2 py-1 text-gray-400">
+              {miembro.equipo?.des_equipo || "Sin equipo"}
+            </td>
+            <td class="whitespace-nowrap px-1 py-1 text-gray-400 text-center">
+              {miembro.discipulado === 's' ? 'Sí' : miembro.discipulado === 'n' ? 'No' : miembro.discipulado === 'a' ? 'Aprobado' : miembro.discipulado === 'p' ? 'Pendiente' : 'N/A'}
+            </td>
+            <td class="whitespace-nowrap px-1 py-1 text-gray-400 text-center">
+              {miembro.bautizado ? 'Sí' : 'No'}
+            </td>
+            <td class="whitespace-nowrap px-2 py-1 text-gray-400">
               {miembro.ultima_asistencia
                 ? new Date(miembro.ultima_asistencia).toLocaleDateString('es-ES', { timeZone: 'UTC' })
                 : <span class="text-red-400">Nunca</span>}
             </td>
-            <td class="whitespace-nowrap px-4 py-2" style="min-width: 160px;">
+            <td class="whitespace-nowrap px-2 py-1" style="min-width: 160px;">
               <div class="flex items-center gap-2">
                 <a
-                  href={`/editar/${miembro.id}`}
+                  href={`/editar/${miembro.id}${filtrosQS ? `?${filtrosQS}` : ''}`}
                   class="inline-block rounded bg-yellow-500 px-3 py-1 text-xs font-medium text-white hover:bg-yellow-600"
                 >
                   Editar
@@ -279,6 +342,8 @@ const zonas = await prisma.zonas.findMany({
     /** @type {HTMLSelectElement | null} */
     const zonaSelect = document.getElementById("zona-filter-select");
     /** @type {HTMLSelectElement | null} */
+    const equipoSelect = document.getElementById("equipo-filter-select");
+    /** @type {HTMLSelectElement | null} */
     const inactividadSelect = document.getElementById("inactividad-filter-select");
     /** @type {HTMLTableSectionElement | null} */
     const tableBody = document.getElementById("miembros-table-body");
@@ -292,9 +357,28 @@ const zonas = await prisma.zonas.findMany({
       !tableBody ||
       !clearFilterBtn ||
       !statusCheckbox ||
-      !zonaSelect
+      !zonaSelect ||
+      !equipoSelect
     ) {
       return; // Exit if elements are not on the page
+    }
+
+    // Restaurar filtros desde URL params si existen
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("search")) {
+      filterInput.value = params.get("search");
+    }
+    if (params.get("status")) {
+      statusCheckbox.checked = params.get("status") === "true";
+    }
+    if (params.get("zona")) {
+      zonaSelect.value = params.get("zona");
+    }
+    if (params.get("equipo")) {
+      equipoSelect.value = params.get("equipo");
+    }
+    if (params.get("inactividad") && inactividadSelect) {
+      inactividadSelect.value = params.get("inactividad");
     }
 
     const allRows = Array.from(tableBody.getElementsByTagName("tr"));
@@ -316,15 +400,19 @@ const zonas = await prisma.zonas.findMany({
       const zonaSelect = document.getElementById(
         "zona-filter-select",
       ) as HTMLSelectElement;
+      const equipoSelect = document.getElementById(
+        "equipo-filter-select",
+      ) as HTMLSelectElement;
       const inactividadSelect = document.getElementById(
         "inactividad-filter-select",
       ) as HTMLSelectElement;
 
-      if (!filterInput || !statusCheckbox || !zonaSelect || !inactividadSelect) return;
+      if (!filterInput || !statusCheckbox || !zonaSelect || !equipoSelect || !inactividadSelect) return;
 
       const searchTerm = filterInput.value.toLowerCase();
       const showInactive = statusCheckbox.checked;
       const selectedZona = zonaSelect.value;
+      const selectedEquipo = equipoSelect.value;
       const selectedInactividad = inactividadSelect.value;
       let visibleRows = 0;
 
@@ -342,6 +430,11 @@ const zonas = await prisma.zonas.findMany({
         // Filter by zona
         const matchesZona =
           selectedZona === "all" || rowZonaId === selectedZona;
+
+        // Filter by equipo
+        const rowEquipoId = row.dataset.equipoId;
+        const matchesEquipo =
+          selectedEquipo === "all" || rowEquipoId === selectedEquipo;
 
         // Filter by search
         const matchesSearch =
@@ -374,7 +467,7 @@ const zonas = await prisma.zonas.findMany({
           matchesInactividad = rowTotalAsistencias === 0;
         }
 
-        if (matchesStatus && matchesZona && matchesSearch && matchesInactividad) {
+        if (matchesStatus && matchesZona && matchesEquipo && matchesSearch && matchesInactividad) {
           row.style.display = "";
           visibleRows++;
         } else {
@@ -382,6 +475,7 @@ const zonas = await prisma.zonas.findMany({
         }
       }
       updateCounter(visibleRows);
+      updateEditLinks();
     }
 
     function handleSearchInput() {
@@ -450,14 +544,43 @@ const zonas = await prisma.zonas.findMany({
       clearFilterBtn.addEventListener("click", clearSearchInput);
       statusCheckbox.addEventListener("change", applyFilters);
       zonaSelect.addEventListener("change", applyFilters);
+      equipoSelect.addEventListener("change", applyFilters);
       inactividadSelect.addEventListener("change", applyFilters);
       tableBody.addEventListener("click", handleTableClick);
       filterInput.dataset.initialized = "true";
     }
 
+    // Limpiar URL después de restaurar filtros (para no duplicar params)
+    if (window.location.search) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
+    // Actualizar enlaces Editar con filtros actuales
+    function updateEditLinks() {
+      const search = filterInput?.value || "";
+      const status = statusCheckbox?.checked ? "true" : "";
+      const zona = zonaSelect?.value || "";
+      const equipo = equipoSelect?.value || "";
+      const inactividad = inactividadSelect?.value || "";
+
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (status) params.set("status", status);
+      if (zona && zona !== "all") params.set("zona", zona);
+      if (equipo && equipo !== "all") params.set("equipo", equipo);
+      if (inactividad && inactividad !== "all") params.set("inactividad", inactividad);
+      const qs = params.toString();
+
+      document.querySelectorAll('a[href^="/editar/"]').forEach((link) => {
+        const baseHref = link.getAttribute("href").split("?")[0];
+        link.setAttribute("href", qs ? `${baseHref}?${qs}` : baseHref);
+      });
+    }
+
     // Initial UI setup on every load
     applyFilters();
     handleSearchInput();
+    updateEditLinks();
   }
 
   // Listen for Astro's client-side navigation event

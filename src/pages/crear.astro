@@ -10,6 +10,9 @@ let errorMessage = "";
 const zonas = await prisma.zonas.findMany({
   orderBy: { nombre_zona: 'asc' },
 });
+const equipos = await prisma.equipos.findMany({
+  orderBy: { des_equipo: 'asc' },
+});
 
 // Initialize formData with default values
 let formData = {
@@ -21,6 +24,9 @@ let formData = {
   telf_2: '',
   status: true,
   zonaId: '',
+  equipoId: '',
+  discipulado: 'n',
+  bautizado: false,
   kids: false
 };
 
@@ -36,13 +42,16 @@ if (Astro.request.method === "POST") {
       telf_2: (data.get("telf_2") ?? '') as string,
       status: data.get("status") === "on",
       zonaId: (data.get("zonaId") ?? '') as string,
+      equipoId: (data.get("equipoId") ?? '') as string,
+      discipulado: (data.get("discipulado") ?? 'n') as string,
+      bautizado: data.get("bautizado") === "on",
       kids: data.get("kids") === "on",
     };
 
   try {
     // Basic validation
-    if (!formData.nombre || !formData.apellido || !formData.cedula || !formData.zonaId) {
-      throw new Error("Nombre, Apellido, Cédula y Zona son campos requeridos.");
+    if (!formData.nombre || !formData.apellido || !formData.cedula || !formData.zonaId || !formData.equipoId || !formData.discipulado) {
+      throw new Error("Nombre, Apellido, Cédula, Zona, Equipo y Discipulado son campos requeridos.");
     }
 
     const capitalize = (str: string) => {
@@ -63,6 +72,9 @@ if (Astro.request.method === "POST") {
         telf_2: formData.telf_2,
         status: formData.status,
         zona_id: formData.zonaId,
+        equipo_id: formData.equipoId,
+        discipulado: formData.discipulado,
+        bautizado: formData.bautizado,
         kids: formData.kids,
       },
     });
@@ -145,6 +157,35 @@ if (Astro.request.method === "POST") {
       </div>
 
       <div>
+        <label for="equipoId" class="block text-sm font-medium text-gray-700">Equipo</label>
+        <select name="equipoId" id="equipoId" required class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          <option value="" disabled selected={!formData.equipoId}>Selecciona un equipo</option>
+          {equipos.map(equipo => (
+            <option value={equipo.id} selected={equipo.id === formData.equipoId}>{equipo.cod_equipo} - {equipo.des_equipo}</option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label for="discipulado" class="block text-sm font-medium text-gray-700">Discipulado</label>
+        <select name="discipulado" id="discipulado" required class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          <option value="" disabled>Selecciona una opción</option>
+          <option value="s" selected={formData.discipulado === 's'}>Sí</option>
+          <option value="n" selected={formData.discipulado === 'n'}>No</option>
+          <option value="a" selected={formData.discipulado === 'a'}>Aprobado</option>
+          <option value="p" selected={formData.discipulado === 'p'}>Pendiente</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="bautizado" class="block text-sm font-medium text-gray-700">Bautizado</label>
+        <div class="flex items-center mt-1">
+          <input type="checkbox" name="bautizado" id="bautizado" checked={formData.bautizado} class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+          <label for="bautizado" class="ml-2 block text-sm text-gray-900">Sí</label>
+        </div>
+      </div>
+
+      <div>
         <label for="direccion" class="block text-sm font-medium text-gray-700">Dirección</label>
         <textarea name="direccion" id="direccion" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">{formData.direccion}</textarea>
       </div>
@@ -193,6 +234,9 @@ if (Astro.request.method === "POST") {
     const clearCedulaBtn = document.getElementById('clear-cedula-btn');
     const nombreInput = document.getElementById('nombre');
     const apellidoInput = document.getElementById('apellido');
+    const equipoSelect = document.getElementById('equipoId');
+    const discipuladoSelect = document.getElementById('discipulado');
+    const bautizadoCheckbox = document.getElementById('bautizado');
 
     if (clearCedulaBtn && cedulaInput && !clearCedulaBtn.dataset.initialized) {
       clearCedulaBtn.addEventListener('click', () => {
@@ -201,6 +245,9 @@ if (Astro.request.method === "POST") {
         if (apellidoInput) apellidoInput.value = '';
         kidCheckbox.checked = false;
         pendienteCheckbox.checked = false;
+        if (equipoSelect) equipoSelect.value = '';
+        if (discipuladoSelect) discipuladoSelect.value = 'n';
+        if (bautizadoCheckbox) bautizadoCheckbox.checked = false;
       });
       clearCedulaBtn.dataset.initialized = 'true';
     }
