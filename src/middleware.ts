@@ -1,8 +1,15 @@
 import { defineMiddleware } from "astro:middleware";
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
 // Rutas que requieren solo autenticación
-const protectedRoutes = ["/dashboard", "/listado", "/eventos", "/crear", "/editar"];
+const protectedRoutes = [
+  "/dashboard",
+  "/listado",
+  "/eventos",
+  "/crear",
+  "/editar",
+  "/discipulado",
+];
 
 // Rutas que requieren rol de administrador
 const adminRoutes = ["/users"];
@@ -11,8 +18,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const { url, cookies, redirect, locals } = context;
   const pathname = url.pathname;
 
-  const onProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-  const onAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
+  const onProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route),
+  );
+  const onAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
 
   // Si no es una ruta protegida, continuar.
   if (!onProtectedRoute && !onAdminRoute) {
@@ -31,7 +40,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
     // 3. Almacenar los datos del usuario en context.locals
     // Aseguramos que el payload decodificado tiene la estructura esperada
-    if (typeof decoded === 'object' && decoded !== null && 'id' in decoded && 'rol' in decoded) {
+    if (
+      typeof decoded === "object" &&
+      decoded !== null &&
+      "id" in decoded &&
+      "rol" in decoded
+    ) {
       locals.user = {
         id: decoded.id,
         rol: decoded.rol,
@@ -39,7 +53,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
     } else {
       throw new Error("Token con formato inválido");
     }
-
   } catch (error) {
     // Si el token es inválido o ha expirado, borrar la cookie y redirigir al login
     cookies.delete("session", { path: "/" });

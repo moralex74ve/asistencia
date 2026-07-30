@@ -51,9 +51,37 @@ model miembros {
   equipo_id   String   @db.Uuid
   discipulado String   @db.Char(1)
   bautizado   Boolean  @default(false)
-  asistencia  asistencia[]
-  equipo     equipos @relation(fields: [equipo_id], references: [id])
-  zonas       zonas    @relation(fields: [zona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  asistencia    asistencia[]
+  equipo        equipos       @relation(fields: [equipo_id], references: [id])
+  zonas         zonas         @relation(fields: [zona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tutor_niveles           discipulado[]           @relation("TutorNivel")
+  tim1_niveles            discipulado[]           @relation("Tim1Nivel")
+  tim2_niveles            discipulado[]           @relation("Tim2Nivel")
+  integrantes_discip      integrantes_discipulado[]
+}
+
+model integrantes_discipulado {
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  miembro_id String  @db.Uuid
+  nivel_cod  String
+
+  miembro miembros    @relation(fields: [miembro_id], references: [id], onDelete: Cascade)
+  nivel   discipulado @relation(fields: [nivel_cod], references: [nivel_cod], onDelete: Cascade)
+
+  @@unique([miembro_id, nivel_cod])
+}
+
+model discipulado {
+  nivel_cod    String    @id
+  nombre_nivel String
+  tutor_nivel  String?   @db.Uuid
+  tim1_nivel   String?   @db.Uuid
+  tim2_nivel   String?   @db.Uuid
+
+  tutor_miembro miembros?                @relation("TutorNivel", fields: [tutor_nivel], references: [id])
+  tim1_miembro  miembros?                @relation("Tim1Nivel", fields: [tim1_nivel], references: [id])
+  tim2_miembro  miembros?                @relation("Tim2Nivel", fields: [tim2_nivel], references: [id])
+  integrantes   integrantes_discipulado[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
