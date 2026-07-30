@@ -28,6 +28,14 @@ if (Astro.request.method === "POST") {
             nivel_cod: nivel_cod,
           },
         });
+        // Actualizar campo discipulado a "s" si es "n" o "p"
+        await prisma.miembros.updateMany({
+          where: {
+            id: miembroId,
+            discipulado: { in: ["n", "p"] },
+          },
+          data: { discipulado: "s" },
+        });
         mensaje = "Integrante agregado correctamente.";
         tipoMensaje = "success";
       }
