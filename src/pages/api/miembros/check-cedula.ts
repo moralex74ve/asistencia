@@ -29,7 +29,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   }
 
   try {
-    jwt.verify(token, import.meta.env.JWT_SECRET);
+    jwt.verify(token, import.meta.env.JWT_SECRET, { algorithms: ["HS256"] });
   } catch {
     return new Response(
       JSON.stringify({ exists: false, message: "Sesión inválida" }),

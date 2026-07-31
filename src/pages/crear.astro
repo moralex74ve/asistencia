@@ -80,14 +80,15 @@ if (Astro.request.method === "POST") {
     });
     
     const redirectUrl = Astro.url.searchParams.get('redirect');
-    return Astro.redirect(redirectUrl || "/listado");
+    const safeRedirect = redirectUrl?.startsWith('/') && !redirectUrl.includes('://') ? redirectUrl : "/listado";
+    return Astro.redirect(safeRedirect);
 
   } catch (error) {
     console.error(error);
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       errorMessage = 'La cédula introducida ya existe. Por favor, verifíquela.';
     } else {
-      errorMessage = `Error al crear el miembro: ${error.message}`;
+      errorMessage = `Error al crear el miembro. Intente de nuevo.`;
     }
   }
 }

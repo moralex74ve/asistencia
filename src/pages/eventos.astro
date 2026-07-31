@@ -2,6 +2,7 @@
 /* export const prerender = false */
 import Layout from "../layouts/Layout.astro";
 import { prisma } from "../db";
+import jwt from "jsonwebtoken";
 
 // Manejar la creación de un nuevo evento
 if (Astro.request.method === "POST") {
@@ -49,6 +50,23 @@ if (Astro.request.method === "POST") {
 
 // Eliminar evento (solo si no tiene asistencia)
 if (Astro.request.method === "DELETE") {
+  // Verificar autenticación
+  const token = Astro.cookies.get("session")?.value;
+  if (!token) {
+    return new Response(JSON.stringify({ success: false, message: "No autorizado" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  try {
+    jwt.verify(token, import.meta.env.JWT_SECRET, { algorithms: ["HS256"] });
+  } catch {
+    return new Response(JSON.stringify({ success: false, message: "Sesión inválida" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const url = new URL(Astro.request.url);
   const id = url.searchParams.get("id");
 

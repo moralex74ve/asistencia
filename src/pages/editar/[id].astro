@@ -84,7 +84,7 @@ if (Astro.request.method === "POST") {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       errorMessage = 'La cédula introducida ya existe. Por favor, verifíquela.';
     } else {
-      errorMessage = `Error al actualizar el miembro: ${error.message}`;
+      errorMessage = `Error al actualizar el miembro. Intente de nuevo.`;
     }
   }
 }

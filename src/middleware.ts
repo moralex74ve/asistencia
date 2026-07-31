@@ -36,7 +36,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   try {
     // 2. Verificar el token JWT
-    const decoded = jwt.verify(token, import.meta.env.JWT_SECRET);
+    const decoded = jwt.verify(token, import.meta.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
 
     // 3. Almacenar los datos del usuario en context.locals
     // Aseguramos que el payload decodificado tiene la estructura esperada
@@ -68,5 +70,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   // 5. Si todo es correcto, continuar con la solicitud
-  return next();
+  const response = await next();
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=()",
+  );
+  return response;
 });

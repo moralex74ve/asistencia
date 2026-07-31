@@ -1,6 +1,6 @@
-import type { APIRoute } from 'astro';
-import { prisma } from '../../../db';
-import jwt from 'jsonwebtoken';
+import type { APIRoute } from "astro";
+import { prisma } from "../../../db";
+import jwt from "jsonwebtoken";
 
 export const DELETE: APIRoute = async ({ params, request, cookies }) => {
   const { id } = params;
@@ -8,26 +8,26 @@ export const DELETE: APIRoute = async ({ params, request, cookies }) => {
   // Verificar autenticación
   const token = cookies.get("session")?.value;
   if (!token) {
-    return new Response(JSON.stringify({ message: 'No autorizado' }), {
+    return new Response(JSON.stringify({ message: "No autorizado" }), {
       status: 401,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
   }
 
   try {
-    jwt.verify(token, import.meta.env.JWT_SECRET);
+    jwt.verify(token, import.meta.env.JWT_SECRET, { algorithms: ["HS256"] });
   } catch {
     cookies.delete("session", { path: "/" });
-    return new Response(JSON.stringify({ message: 'Sesión inválida' }), {
+    return new Response(JSON.stringify({ message: "Sesión inválida" }), {
       status: 401,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
   }
 
   if (!id) {
-    return new Response(JSON.stringify({ message: 'Se requiere el ID' }), {
+    return new Response(JSON.stringify({ message: "Se requiere el ID" }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
   }
 
@@ -36,22 +36,28 @@ export const DELETE: APIRoute = async ({ params, request, cookies }) => {
       where: { id: id },
     });
 
-    return new Response(JSON.stringify({ message: 'Eliminado correctamente' }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ message: "Eliminado correctamente" }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   } catch (error) {
     console.error(error);
-    if (error.code === 'P2025') {
-      return new Response(JSON.stringify({ message: 'Registro no encontrado' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    if (error.code === "P2025") {
+      return new Response(
+        JSON.stringify({ message: "Registro no encontrado" }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     }
 
-    return new Response(JSON.stringify({ message: 'Error al eliminar' }), {
+    return new Response(JSON.stringify({ message: "Error al eliminar" }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
   }
 };
