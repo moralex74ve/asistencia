@@ -233,6 +233,9 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
                 >Cédula</th
               >
               <th class="whitespace-nowrap px-4 py-2 font-medium text-left"
+                >Teléfono</th
+              >
+              <th class="whitespace-nowrap px-4 py-2 font-medium text-left"
                 >Status</th
               >
               <th class="whitespace-nowrap px-4 py-2 font-medium text-left"
@@ -260,6 +263,9 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
                   </td>
                   <td class="whitespace-nowrap px-4 py-2 text-gray-400">
                     {miembro.cedula}
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-2 text-gray-400">
+                    {miembro.telef}
                   </td>
                   <td class="whitespace-nowrap px-4 py-2 text-gray-400">
                     <span
@@ -392,6 +398,7 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
           const rowZonaId = row.dataset.zonaId;
           const nameCell = row.cells[1];
           const cedulaCell = row.cells[2];
+          const telefCell = row.cells[3];
 
           const matchesStatus = showInactive || rowStatus === "activo";
           const matchesZona =
@@ -399,7 +406,8 @@ const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
           const matchesSearch =
             !searchTerm ||
             nameCell?.textContent?.toLowerCase().includes(searchTerm) ||
-            cedulaCell?.textContent?.toLowerCase().includes(searchTerm);
+            cedulaCell?.textContent?.toLowerCase().includes(searchTerm) ||
+            telefCell?.textContent?.toLowerCase().includes(searchTerm);
 
           row.style.display =
             matchesStatus && matchesZona && matchesSearch ? "" : "none";
