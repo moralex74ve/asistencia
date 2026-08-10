@@ -13,6 +13,7 @@ const zonas = await prisma.zonas.findMany({
 const equipos = await prisma.equipos.findMany({
   orderBy: { des_equipo: 'asc' },
 });
+const equipoDefault = equipos.find(e => e.cod_equipo === 'eq-09');
 
 // Initialize formData with default values
 let formData = {
@@ -24,7 +25,7 @@ let formData = {
   telf_2: '',
   status: true,
   zonaId: '',
-  equipoId: '',
+  equipoId: equipoDefault?.id ?? '',
   discipulado: 'n',
   bautizado: false,
   kids: false

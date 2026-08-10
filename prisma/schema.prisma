@@ -10,12 +10,13 @@ datasource db {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model asistencia {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  miembro_id String   @db.Uuid
-  evento_id  String   @db.Uuid
-  presente   Boolean  @default(false)
-  evento     evento   @relation(fields: [evento_id], references: [id], onDelete: Cascade)
-  miembros   miembros @relation(fields: [miembro_id], references: [id], onDelete: Cascade)
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  miembro_id   String    @db.Uuid
+  evento_id    String    @db.Uuid
+  presente     Boolean   @default(false)
+  hora_llegada DateTime? @db.Timestamptz(6)
+  evento       evento    @relation(fields: [evento_id], references: [id], onDelete: Cascade)
+  miembros     miembros  @relation(fields: [miembro_id], references: [id], onDelete: Cascade)
 
   @@unique([miembro_id, evento_id])
 }
