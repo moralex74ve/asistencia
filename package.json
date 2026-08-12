@@ -8,7 +8,8 @@
     "build": "pnpm install && prisma generate && astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "genere": "pnpm install @prisma/client && pnpx prisma generate"
+    "genere": "pnpm install @prisma/client && pnpx prisma generate",
+    "cambiar-genero": "tsx scripts/cambiar-genero.ts"
   },
   "dependencies": {
     "@astrojs/node": "^9.4.3",

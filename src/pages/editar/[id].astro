@@ -46,6 +46,7 @@ if (Astro.request.method === "POST") {
     const equipoId = (data.get("equipoId") ?? '') as string;
     const discipulado = (data.get("discipulado") ?? '') as string;
     const bautizado = data.get("bautizado") === "on";
+    const genero = (data.get("genero") ?? 'F') as string;
     const kids = data.get("kids") === "on";
     const pendiente = data.get("pendiente") === "on";
 
@@ -75,6 +76,7 @@ if (Astro.request.method === "POST") {
         equipo_id: equipoId,
         discipulado,
         bautizado,
+        genero,
         kids,
       },
     });
@@ -131,7 +133,7 @@ if (Astro.request.method === "POST") {
             </button>
           </div>
         </div>
-        <div class="flex items-center mt-6 gap-4">
+        <div class="flex items-center mt-6 gap-4 flex-wrap">
           <div class="flex items-center">
             <input type="checkbox" name="kids" id="kids" checked={miembro.kids} data-miembro-id={miembro.id} class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
             <label for="kids" class="ml-2 block text-sm text-gray-900">Niño</label>
@@ -139,6 +141,21 @@ if (Astro.request.method === "POST") {
           <div class="flex items-center">
             <input type="checkbox" name="pendiente" id="pendiente" checked={isPendiente} class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
             <label for="pendiente" class="ml-2 block text-sm text-gray-900">Pendiente</label>
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="block text-sm font-medium text-gray-700">Sexo</label>
+            <div class="flex items-center">
+              <input type="radio" name="genero" id="genero-f" value="F" checked={miembro.genero === 'F'} class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+              <label for="genero-f" class="ml-1 block text-sm text-gray-900">F</label>
+            </div>
+            <div class="flex items-center">
+              <input type="radio" name="genero" id="genero-m" value="M" checked={miembro.genero === 'M'} class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+              <label for="genero-m" class="ml-1 block text-sm text-gray-900">M</label>
+            </div>
+            <div class="flex items-center">
+              <input type="radio" name="genero" id="genero-o" value="O" checked={miembro.genero === 'O'} class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+              <label for="genero-o" class="ml-1 block text-sm text-gray-900">O</label>
+            </div>
           </div>
         </div>
       </div>

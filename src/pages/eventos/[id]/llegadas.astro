@@ -22,6 +22,7 @@ const [evento, miembrosEnAsistencia, todasZonas] = await Promise.all([
           apellido: true,
           cedula: true,
           telef: true,
+          genero: true,
           status: true,
           zona_id: true,
           zonas: true,
@@ -45,14 +46,23 @@ const zonasUsadas = todasZonas.filter((z) =>
   miembrosEnAsistencia.some((a) => a.miembros.zona_id === z.id)
 );
 
+const esNino = (a: { miembros: { cedula: string } }) =>
+  a.miembros.cedula.toLowerCase().startsWith("kids-");
+const adultos = miembrosEnAsistencia.filter((a) => !esNino(a));
+const ninos = miembrosEnAsistencia.filter((a) => esNino(a));
+const generoDe = (a: { miembros: { genero: string | null } }) =>
+  (a.miembros.genero || "F").toUpperCase();
+
 const datosExportPdf = {
   eventoId,
   eventoNombre: evento.nombre,
   totalAsistentes: miembrosEnAsistencia.length,
   totalLlegados: miembrosEnAsistencia.filter((a) => a.hora_llegada).length,
-  totalNinos: miembrosEnAsistencia.filter((a) =>
-    a.miembros.cedula.toLowerCase().startsWith("kids-")
-  ).length,
+  totalNinos: ninos.length,
+  totalHombresAdultos: adultos.filter((a) => generoDe(a) === "M").length,
+  totalMujeresAdultas: adultos.filter((a) => generoDe(a) === "F").length,
+  totalNinosHombres: ninos.filter((a) => generoDe(a) === "M").length,
+  totalNinosMujeres: ninos.filter((a) => generoDe(a) === "F").length,
   asistentesPorEquipo: Array.from(
     miembrosEnAsistencia
       .reduce((map, a) => {
@@ -331,11 +341,21 @@ const datosExportPdf = {
       doc.text(`Total de asistentes: ${exportData.totalAsistentes}`, 14, 31);
       doc.text(`Total de llegados: ${exportData.totalLlegados}`, 14, 37);
       doc.text(`Total de niños: ${exportData.totalNinos}`, 14, 43);
+      doc.text(
+        `Adultos - Hombres (M): ${exportData.totalHombresAdultos} | Mujeres (F): ${exportData.totalMujeresAdultas}`,
+        14,
+        49
+      );
+      doc.text(
+        `Niños - Hombres (M): ${exportData.totalNinosHombres} | Mujeres (F): ${exportData.totalNinosMujeres}`,
+        14,
+        55
+      );
 
-      doc.text("Listado de Integrantes", 14, 52);
+      doc.text("Listado de Integrantes", 14, 64);
 
       autoTable(doc, {
-        startY: 56,
+        startY: 68,
         head: [
           ["Nombre y Apellido", "Cédula", "Teléfono", "Zona", "Equipo", "Hora"],
         ],

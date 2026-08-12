@@ -28,6 +28,7 @@ let formData = {
   equipoId: equipoDefault?.id ?? '',
   discipulado: 'n',
   bautizado: false,
+  genero: 'F',
   kids: false
 };
 
@@ -46,6 +47,7 @@ if (Astro.request.method === "POST") {
       equipoId: (data.get("equipoId") ?? '') as string,
       discipulado: (data.get("discipulado") ?? 'n') as string,
       bautizado: data.get("bautizado") === "on",
+      genero: (data.get("genero") ?? 'F') as string,
       kids: data.get("kids") === "on",
     };
 
@@ -76,6 +78,7 @@ if (Astro.request.method === "POST") {
         equipo_id: formData.equipoId,
         discipulado: formData.discipulado,
         bautizado: formData.bautizado,
+        genero: formData.genero,
         kids: formData.kids,
       },
     });
@@ -106,12 +109,12 @@ if (Astro.request.method === "POST") {
       </div>
     )}
 
-    <form method="POST" data-astro-reload class="space-y-6 bg-white p-8 rounded-lg shadow-md">
+    <form method="POST" data-astro-reload class="space-y-4 bg-white p-8 rounded-lg shadow-md">
       
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre</label>
-          <input type="text" name="nombre" id="nombre" required value={formData.nombre} class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          <input type="text" name="nombre" id="nombre" required value={formData.nombre} autofocus class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
         </div>
         <div>
           <label for="apellido" class="block text-sm font-medium text-gray-700">Apellido</label>
@@ -119,7 +122,7 @@ if (Astro.request.method === "POST") {
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label for="cedula" class="block text-sm font-medium text-gray-700">Cédula</label>
           <div class="flex gap-2">
@@ -136,7 +139,7 @@ if (Astro.request.method === "POST") {
             </button>
           </div>
         </div>
-        <div class="flex items-center mt-6 gap-4">
+        <div class="flex items-center mt-6 gap-4 flex-wrap">
           <div class="flex items-center">
             <input type="checkbox" name="kids" id="kids" checked={formData.kids} class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
             <label for="kids" class="ml-2 block text-sm text-gray-900">Niño</label>
@@ -144,6 +147,21 @@ if (Astro.request.method === "POST") {
           <div class="flex items-center">
             <input type="checkbox" name="pendiente" id="pendiente" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
             <label for="pendiente" class="ml-2 block text-sm text-gray-900">Pendiente</label>
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="block text-sm font-medium text-gray-700">Sexo</label>
+            <div class="flex items-center">
+              <input type="radio" name="genero" id="genero-f" value="F" checked={formData.genero === 'F'} class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+              <label for="genero-f" class="ml-1 block text-sm text-gray-900">F</label>
+            </div>
+            <div class="flex items-center">
+              <input type="radio" name="genero" id="genero-m" value="M" checked={formData.genero === 'M'} class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+              <label for="genero-m" class="ml-1 block text-sm text-gray-900">M</label>
+            </div>
+            <div class="flex items-center">
+              <input type="radio" name="genero" id="genero-o" value="O" checked={formData.genero === 'O'} class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+              <label for="genero-o" class="ml-1 block text-sm text-gray-900">O</label>
+            </div>
           </div>
         </div>
       </div>
@@ -192,7 +210,7 @@ if (Astro.request.method === "POST") {
         <textarea name="direccion" id="direccion" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">{formData.direccion}</textarea>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label for="telef" class="block text-sm font-medium text-gray-700">Celular</label>
           <input type="text" name="telef" id="telef" value={formData.telef} class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">

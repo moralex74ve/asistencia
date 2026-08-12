@@ -47,6 +47,7 @@ const miembrosData = miembrosRaw.map(m => {
     equipo: m.equipo,
     discipulado: m.discipulado,
     bautizado: m.bautizado,
+    genero: m.genero,
     zonas: m.zonas,
     // La primera es la más reciente por el orderBy desc en la consulta
     ultima_asistencia: m.asistencia.length > 0 ? m.asistencia[0].evento.fecha : null,
@@ -222,6 +223,10 @@ const filtrosQS = filtrosParams.toString();
           >Teléfono</th
         >
         <th
+          class="whitespace-nowrap px-1 py-1 font-medium text-center text-slate-50"
+          >Sexo</th
+        >
+        <th
           class="whitespace-nowrap px-2 py-1 font-medium text-left text-slate-50"
           >Status</th
         >
@@ -271,6 +276,9 @@ const filtrosQS = filtrosParams.toString();
             </td>
             <td class="whitespace-nowrap px-2 py-1 text-gray-400">
               {miembro.telef || "N/A"}
+            </td>
+            <td class="whitespace-nowrap px-1 py-1 text-gray-400 text-center text-xs">
+              {miembro.genero}
             </td>
             <td class="whitespace-nowrap px-2 py-1 text-gray-400">
               <span
