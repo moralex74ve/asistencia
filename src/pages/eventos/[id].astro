@@ -236,7 +236,7 @@ const datosExportPdf = {
         class="mb-1 flex flex-wrap items-center justify-between lg:gap-3 sm:gap-1 sm:p-2 lg:p-4 bg-base-200 rounded-lg"
       >
         <!-- Search -->
-        <div class="flex w-full items-center gap-4 sm:w-auto">
+        <div class="flex w-full items-center gap-3 sm:w-auto">
           <div class="relative">
             <input
               type="text"
@@ -263,25 +263,20 @@ const datosExportPdf = {
               >
             </button>
           </div>
+          <input
+            id="event-status-filter-checkbox"
+            type="checkbox"
+            aria-label="Mostrar inactivos"
+            class="h-5 w-5 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
         </div>
 
         <!-- Filters and Action -->
         <div class="flex flex-wrap items-center justify-start gap-2 sm:gap-4">
-          <div class="flex items-center">
-            <input
-              id="event-status-filter-checkbox"
-              type="checkbox"
-              class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <label
-              for="event-status-filter-checkbox"
-              class="ml-2 text-sm font-medium">Mostrar inactivos</label
-            >
-          </div>
 
           <select
             id="event-zona-filter-select"
-            class="block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:w-auto sm:max-w-xs"
+            class="block w-full rounded-md border-gray-300 bg-white px-3 py-1 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:w-auto sm:max-w-xs"
           >
             <option value="all">Todas las zonas</option>
             {
