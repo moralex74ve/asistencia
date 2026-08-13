@@ -109,7 +109,7 @@ const datosExportPdf = {
         map.set(equipo, (map.get(equipo) || 0) + 1);
         return map;
       }, new Map<string, number>())
-      .entries()
+      .entries(),
   )
     .map(([equipo, total]) => ({ equipo, total }))
     .sort((a, b) => a.equipo.localeCompare(b.equipo)),
@@ -131,8 +131,8 @@ const datosExportPdf = {
       class="text-blue-400 hover:underline mb-4 inline-block"
       >&larr; Volver a todos los eventos</a
     >
-    <h1 class="sm:text-xs lg:text-4xl font-bold">{evento.nombre}</h1>
-    <p class="sm:text-xs lg:text-lg text-gray-400 mb-2">
+    <h1 class="text-xl sm:text-xs lg:text-4xl font-bold break-words">{evento.nombre}</h1>
+    <p class="hidden sm:block sm:text-xs lg:text-lg text-gray-400 mb-2">
       {
         new Date(evento.fecha).toLocaleDateString("es-ES", {
           timeZone: "UTC",
@@ -144,8 +144,9 @@ const datosExportPdf = {
       }
     </p>
 
-    <div class="text-md text-gray-300 mb-6 flex items-center gap-3">
-      <span class="sm:text-xs lg:text-lg font-semibold"
+    <div class="text-md text-gray-300 mb-6 flex flex-wrap items-center gap-2 sm:gap-3">
+      <span class="sm:hidden sm:text-xs lg:text-lg font-semibold">Total:</span>
+      <span class="hidden sm:inline sm:text-xs lg:text-lg font-semibold"
         >Miembros en este evento:</span
       >
       <span
@@ -205,7 +206,7 @@ const datosExportPdf = {
             d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
             clip-rule="evenodd"></path>
         </svg>
-        Exportar PDF
+        <span class="hidden sm:inline">Exportar PDF</span>
       </button>
       <a
         href={`/eventos/${eventoId}/llegadas`}
@@ -222,20 +223,20 @@ const datosExportPdf = {
             d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
             clip-rule="evenodd"></path>
         </svg>
-        Ver Llegadas
+        <span class="hidden sm:inline">Ver Llegadas</span>
       </a>
     </div>
 
-    <h2 class="sm:text-xs lg:text-xl font-semibold mb-2">
+    <h2 class="sm:text-xs sm:mb-0 lg:text-xl font-semibold mb-1">
       Agregar Miembros al Evento
     </h2>
 
     <form method="POST">
       <div
-        class="mb-1 flex flex-wrap items-center justify-between lg:gap-3 sm:gap-2 p-4 bg-base-200 rounded-lg"
+        class="mb-1 flex flex-wrap items-center justify-between lg:gap-3 sm:gap-1 sm:p-2 lg:p-4 bg-base-200 rounded-lg"
       >
         <!-- Search -->
-        <div class="flex items-center gap-4">
+        <div class="flex w-full items-center gap-4 sm:w-auto">
           <div class="relative">
             <input
               type="text"
@@ -265,15 +266,16 @@ const datosExportPdf = {
         </div>
 
         <!-- Filters and Action -->
-        <div class="flex flex-wrap items-center justify-start gap-4">
+        <div class="flex flex-wrap items-center justify-start gap-2 sm:gap-4">
           <div class="flex items-center">
             <input
               id="event-status-filter-checkbox"
               type="checkbox"
               class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <label for="event-status-filter-checkbox" class="ml-2 text-sm font-medium"
-              >Mostrar inactivos</label
+            <label
+              for="event-status-filter-checkbox"
+              class="ml-2 text-sm font-medium">Mostrar inactivos</label
             >
           </div>
 
@@ -291,7 +293,7 @@ const datosExportPdf = {
 
           <button
             type="submit"
-            class="inline-block rounded bg-green-600 px-4 py-2 text-xs font-medium text-white hover:bg-green-700"
+            class="inline-block w-full rounded bg-green-600 px-4 py-2 text-xs font-medium text-white hover:bg-green-700 sm:w-auto"
           >
             Incluir Seleccionados
           </button>
@@ -322,7 +324,10 @@ const datosExportPdf = {
               >
             </tr>
           </thead>
-          <tbody id="event-miembros-table-body" class="divide-y divide-gray-700">
+          <tbody
+            id="event-miembros-table-body"
+            class="divide-y divide-gray-700"
+          >
             {
               miembros.map((miembro) => (
                 <tr
@@ -405,17 +410,18 @@ const datosExportPdf = {
           miembrosEnAsistencia.map((asistencia) => (
             <li class="bg-slate-700 p-3 rounded-md text-xs lg:text-md flex justify-between items-center">
               <div class="flex flex-col min-w-0">
-                <span class="truncate">{asistencia.miembros.nombre} {asistencia.miembros.apellido}</span>
-                {
-                  asistencia.hora_llegada && (
-                    <span class="text-green-400 text-xs">
-                      Llegó: {new Date(asistencia.hora_llegada).toLocaleTimeString(
-                        "es-ES",
-                        { hour: "2-digit", minute: "2-digit" }
-                      )}
-                    </span>
-                  )
-                }
+                <span class="truncate">
+                  {asistencia.miembros.nombre} {asistencia.miembros.apellido}
+                </span>
+                {asistencia.hora_llegada && (
+                  <span class="text-green-400 text-xs">
+                    Llegó:{" "}
+                    {new Date(asistencia.hora_llegada).toLocaleTimeString(
+                      "es-ES",
+                      { hour: "2-digit", minute: "2-digit" },
+                    )}
+                  </span>
+                )}
               </div>
               <button
                 type="button"
@@ -423,8 +429,17 @@ const datosExportPdf = {
                 data-asistencia-id={asistencia.id}
                 title="Quitar del evento"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clip-rule="evenodd"
+                  />
                 </svg>
               </button>
             </li>
@@ -441,14 +456,21 @@ const datosExportPdf = {
     </div>
   </div>
 
-  <script is:inline id="event-export-data" type="application/json" set:html={JSON.stringify(datosExportPdf)}></script>
+  <script
+    is:inline
+    id="event-export-data"
+    type="application/json"
+    set:html={JSON.stringify(datosExportPdf)}
+  />
   <script>
     import { jsPDF } from "jspdf";
     import autoTable from "jspdf-autotable";
 
     function exportPdf() {
       const dataEl = document.getElementById("event-export-data");
-      const exportData = dataEl ? JSON.parse(dataEl.textContent || "null") : null;
+      const exportData = dataEl
+        ? JSON.parse(dataEl.textContent || "null")
+        : null;
 
       if (!exportData || exportData.asistentes.length === 0) {
         alert("No hay miembros en el evento para exportar.");
@@ -462,9 +484,14 @@ const datosExportPdf = {
       const addPageNumber = (data: { pageNumber: number; doc: jsPDF }) => {
         data.doc.setFontSize(8);
         data.doc.setTextColor(130);
-        data.doc.text(`Página ${data.pageNumber}`, pageWidth - 14, pageHeight - 8, {
-          align: "right",
-        });
+        data.doc.text(
+          `Página ${data.pageNumber}`,
+          pageWidth - 14,
+          pageHeight - 8,
+          {
+            align: "right",
+          },
+        );
       };
 
       doc.setFontSize(16);
@@ -475,7 +502,7 @@ const datosExportPdf = {
       doc.text(
         `Fecha de exportación: ${new Date().toLocaleDateString("es-ES")}`,
         14,
-        22
+        22,
       );
 
       doc.setFontSize(12);
@@ -485,12 +512,12 @@ const datosExportPdf = {
       doc.text(
         `Adultos - Hombres (M): ${exportData.totalHombresAdultos} | Mujeres (F): ${exportData.totalMujeresAdultas}`,
         14,
-        43
+        43,
       );
       doc.text(
         `Niños - Hombres (M): ${exportData.totalNinosHombres} | Mujeres (F): ${exportData.totalNinosMujeres}`,
         14,
-        49
+        49,
       );
 
       doc.text("Listado de Integrantes", 14, 58);
@@ -505,7 +532,7 @@ const datosExportPdf = {
             telef: string;
             zona: string;
             equipo: string;
-          }) => [a.nombre, a.cedula, a.telef, a.zona, a.equipo]
+          }) => [a.nombre, a.cedula, a.telef, a.zona, a.equipo],
         ),
         styles: { fontSize: 9 },
         headStyles: { fillColor: [31, 41, 55], textColor: 255, halign: "left" },
@@ -526,7 +553,7 @@ const datosExportPdf = {
         startY: teamSectionY + 4,
         head: [["Equipo", "Total de Asistentes"]],
         body: exportData.asistentesPorEquipo.map(
-          (e: { equipo: string; total: number }) => [e.equipo, String(e.total)]
+          (e: { equipo: string; total: number }) => [e.equipo, String(e.total)],
         ),
         styles: { fontSize: 9 },
         headStyles: { fillColor: [31, 41, 55], textColor: 255, halign: "left" },
@@ -538,22 +565,18 @@ const datosExportPdf = {
     }
 
     function initializePage() {
-      const filterInput = document.getElementById(
-        "event-filter-input"
-      ) ;
-      const clearFilterBtn = document.getElementById(
-        "event-clear-filter-btn"
-      ) ;
+      const filterInput = document.getElementById("event-filter-input");
+      const clearFilterBtn = document.getElementById("event-clear-filter-btn");
       const statusCheckbox = document.getElementById(
-        "event-status-filter-checkbox"
-      ) ;
-      const zonaSelect = document.getElementById(
-        "event-zona-filter-select"
-      ) ;
+        "event-status-filter-checkbox",
+      );
+      const zonaSelect = document.getElementById("event-zona-filter-select");
       const tableBody = document.getElementById("event-miembros-table-body");
 
       // Modal elements
-      const showAttendeesBtn = document.getElementById("event-show-attendees-btn");
+      const showAttendeesBtn = document.getElementById(
+        "event-show-attendees-btn",
+      );
       const attendeeModal = document.getElementById("event-attendee-modal");
       const closeModalBtn = document.getElementById("event-close-modal-btn");
 
@@ -580,7 +603,7 @@ const datosExportPdf = {
       function toggleRowCheckbox(e: MouseEvent) {
         if ((e.target as HTMLElement).tagName === "INPUT") return;
         const checkbox = (e.currentTarget as HTMLElement).querySelector(
-          ".member-checkbox"
+          ".member-checkbox",
         ) as HTMLInputElement | null;
         if (checkbox) checkbox.checked = !checkbox.checked;
       }
@@ -633,11 +656,11 @@ const datosExportPdf = {
 
       function handleBackToEvents(e) {
         const memberCheckboxes = document.querySelectorAll(
-          ".member-checkbox:checked"
+          ".member-checkbox:checked",
         );
         if (memberCheckboxes.length > 0) {
           const confirmation = confirm(
-            "Hay miembros seleccionados. ¿Desea descartar la selección y volver?"
+            "Hay miembros seleccionados. ¿Desea descartar la selección y volver?",
           );
           if (!confirmation) {
             e.preventDefault();
@@ -653,7 +676,7 @@ const datosExportPdf = {
         zonaSelect.addEventListener("change", applyFilters);
         backToEventsLink.addEventListener("click", handleBackToEvents);
         allRows.forEach((row) =>
-          row.addEventListener("click", toggleRowCheckbox)
+          row.addEventListener("click", toggleRowCheckbox),
         );
 
         // Modal listeners
@@ -673,30 +696,34 @@ const datosExportPdf = {
       handleSearchInput();
 
       // Remove attendee functionality
-      const removeButtons = document.querySelectorAll('.remove-attendee-btn');
-      removeButtons.forEach(btn => {
-        btn.addEventListener('click', async (e) => {
+      const removeButtons = document.querySelectorAll(".remove-attendee-btn");
+      removeButtons.forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
           const button = e.currentTarget as HTMLButtonElement;
           const asistenciaId = button.dataset.asistenciaId;
 
-          if (!confirm('¿Está seguro de que desea quitar a este miembro del evento?')) {
+          if (
+            !confirm(
+              "¿Está seguro de que desea quitar a este miembro del evento?",
+            )
+          ) {
             return;
           }
 
           try {
             const response = await fetch(`/api/asistencia/${asistenciaId}`, {
-              method: 'DELETE'
+              method: "DELETE",
             });
 
             if (response.ok) {
               // Refresh the page to update the table
               window.location.reload();
             } else {
-              alert('Error al eliminar');
+              alert("Error al eliminar");
             }
           } catch (error) {
-            console.error('Error:', error);
-            alert('Error al eliminar');
+            console.error("Error:", error);
+            alert("Error al eliminar");
           }
         });
       });
