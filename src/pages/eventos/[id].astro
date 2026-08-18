@@ -624,16 +624,14 @@ const datosExportPdf = {
       doc.setTextColor(20);
       doc.text(`Total de asistentes: ${exportData.asistentesSinNinos.length}`, 14, 31);
 
-      doc.text("Listado de Asistentes", 14, 40);
-
       autoTable(doc, {
-        startY: 44,
+        startY: 35,
         head: [["#", "Nombre y Apellido", "Cédula", "Teléfono", "Firma"]],
         body: exportData.asistentesSinNinos.map(
           (a: { nombre: string; cedula: string; telef: string }, i: number) => [
             String(i + 1),
             a.nombre,
-            a.cedula,
+            a.cedula.toLowerCase().startsWith("pend-") ? "____________________" : a.cedula,
             a.telef,
             "____________________",
           ]
