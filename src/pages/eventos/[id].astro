@@ -647,7 +647,7 @@ const datosExportPdf = {
         },
         didDrawCell: (data: any) => {
           if (data.column.index === 2) {
-            const cedula = String(data.row.data[2] || "").toLowerCase();
+            const cedula = String(data.cell.raw || "").toLowerCase();
             if (cedula.startsWith("pend-")) {
               data.cell.styles.fillColor = [255, 233, 233];
               data.cell.styles.fontStyle = "bold";
