@@ -631,7 +631,7 @@ const datosExportPdf = {
           (a: { nombre: string; cedula: string; telef: string }, i: number) => [
             String(i + 1),
             a.nombre,
-            a.cedula.toLowerCase().startsWith("pend-") ? "____________________" : a.cedula,
+            a.cedula.toLowerCase().startsWith("pend-") ? "__________" : a.cedula,
             a.telef,
             "____________________",
           ]
