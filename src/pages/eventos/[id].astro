@@ -645,6 +645,16 @@ const datosExportPdf = {
           0: { cellWidth: 10 },
           4: { cellWidth: 40 },
         },
+        didDrawCell: (data: any) => {
+          if (data.column.index === 2) {
+            const cedula = String(data.row.data[2] || "").toLowerCase();
+            if (cedula.startsWith("pend-")) {
+              data.cell.styles.fillColor = [255, 233, 233];
+              data.cell.styles.fontStyle = "bold";
+              data.cell.styles.textColor = [150, 0, 0];
+            }
+          }
+        },
         didDrawPage: addPageNumber,
       });
 
