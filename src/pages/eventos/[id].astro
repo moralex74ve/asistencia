@@ -120,6 +120,11 @@ const datosExportPdf = {
     zona: a.miembros.zonas?.nombre_zona || "",
     equipo: a.miembros.equipo?.des_equipo || "",
   })),
+  asistentesSinNinos: adultos.map((a) => ({
+    nombre: `${a.miembros.nombre} ${a.miembros.apellido}`,
+    cedula: a.miembros.cedula,
+    telef: a.miembros.telef || "",
+  })),
 };
 ---
 
@@ -207,6 +212,25 @@ const datosExportPdf = {
             clip-rule="evenodd"></path>
         </svg>
         <span class="hidden sm:inline">Exportar PDF</span>
+      </button>
+      <button
+        id="event-export-asistentes-pdf-btn"
+        type="button"
+        title="Exportar listado de asistentes a PDF"
+        class="inline-flex items-center gap-1.5 rounded-lg bg-red-700 hover:bg-red-600 px-3 py-2 text-xs font-medium text-white"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+            clip-rule="evenodd"></path>
+        </svg>
+        <span class="hidden sm:inline">Listado de Asistentes</span>
       </button>
       <a
         href={`/eventos/${eventoId}/llegadas`}
@@ -491,7 +515,7 @@ const datosExportPdf = {
 
       doc.setFontSize(16);
       doc.setTextColor(20);
-      doc.text(`Listado de Integrantes - ${exportData.eventoNombre}`, 14, 16);
+      doc.text(`Listado de Asistentes - ${exportData.eventoNombre}`, 14, 16);
       doc.setFontSize(10);
       doc.setTextColor(100);
       doc.text(
@@ -515,7 +539,7 @@ const datosExportPdf = {
         49,
       );
 
-      doc.text("Listado de Integrantes", 14, 58);
+      doc.text("Listado de Asistentes", 14, 58);
 
       autoTable(doc, {
         startY: 62,
@@ -559,6 +583,74 @@ const datosExportPdf = {
       doc.save(`integrantes-${exportData.eventoId}.pdf`);
     }
 
+    function exportAsistentesPdf() {
+      const dataEl = document.getElementById("event-export-data");
+      const exportData = dataEl
+        ? JSON.parse(dataEl.textContent || "null")
+        : null;
+
+      if (!exportData || exportData.asistentesSinNinos.length === 0) {
+        alert("No hay asistentes en el evento para exportar.");
+        return;
+      }
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      const addPageNumber = (data: { pageNumber: number; doc: jsPDF }) => {
+        data.doc.setFontSize(8);
+        data.doc.setTextColor(130);
+        data.doc.text(
+          `Página ${data.pageNumber}`,
+          pageWidth - 14,
+          pageHeight - 8,
+          { align: "right" }
+        );
+      };
+
+      doc.setFontSize(16);
+      doc.setTextColor(20);
+      doc.text(`Listado de Asistentes - ${exportData.eventoNombre}`, 14, 16);
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(
+        `Fecha de exportación: ${new Date().toLocaleDateString("es-ES")}`,
+        14,
+        22
+      );
+
+      doc.setFontSize(12);
+      doc.setTextColor(20);
+      doc.text(`Total de asistentes: ${exportData.asistentesSinNinos.length}`, 14, 31);
+
+      doc.text("Listado de Asistentes", 14, 40);
+
+      autoTable(doc, {
+        startY: 44,
+        head: [["#", "Nombre y Apellido", "Cédula", "Teléfono", "Firma"]],
+        body: exportData.asistentesSinNinos.map(
+          (a: { nombre: string; cedula: string; telef: string }, i: number) => [
+            String(i + 1),
+            a.nombre,
+            a.cedula,
+            a.telef,
+            "____________________",
+          ]
+        ),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [31, 41, 55], textColor: 255, halign: "left" },
+        alternateRowStyles: { fillColor: [243, 244, 246] },
+        columnStyles: {
+          0: { cellWidth: 10 },
+          4: { cellWidth: 40 },
+        },
+        didDrawPage: addPageNumber,
+      });
+
+      doc.save(`asistentes-${exportData.eventoId}.pdf`);
+    }
+
     function initializePage() {
       const filterInput = document.getElementById("event-filter-input");
       const clearFilterBtn = document.getElementById("event-clear-filter-btn");
@@ -576,6 +668,7 @@ const datosExportPdf = {
       const closeModalBtn = document.getElementById("event-close-modal-btn");
 
       const exportPdfBtn = document.getElementById("event-export-pdf-btn");
+      const exportAsistentesPdfBtn = document.getElementById("event-export-asistentes-pdf-btn");
       const backToEventsLink = document.getElementById("back-to-events-link");
 
       if (
@@ -588,6 +681,7 @@ const datosExportPdf = {
         !attendeeModal ||
         !closeModalBtn ||
         !exportPdfBtn ||
+        !exportAsistentesPdfBtn ||
         !backToEventsLink
       ) {
         return;
@@ -678,6 +772,7 @@ const datosExportPdf = {
         showAttendeesBtn.addEventListener("click", showModal);
         closeModalBtn.addEventListener("click", hideModal);
         exportPdfBtn.addEventListener("click", exportPdf);
+        exportAsistentesPdfBtn.addEventListener("click", exportAsistentesPdf);
         attendeeModal.addEventListener("click", (e) => {
           if (e.target === attendeeModal) {
             hideModal();
