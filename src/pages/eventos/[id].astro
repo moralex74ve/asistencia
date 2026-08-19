@@ -256,6 +256,7 @@ const datosExportPdf = {
     </h2>
 
     <form method="POST">
+      <input type="hidden" name="_csrf" value={Astro.locals.csrfToken} />
       <div
         class="mb-1 flex flex-wrap items-center justify-between lg:gap-3 sm:gap-1 sm:p-2 lg:p-4 bg-base-200 rounded-lg"
       >
@@ -287,12 +288,18 @@ const datosExportPdf = {
               >
             </button>
           </div>
-          <input
-            id="event-status-filter-checkbox"
-            type="checkbox"
-            aria-label="Mostrar inactivos"
-            class="h-5 w-5 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
+          <div class="flex items-center flex-shrink-0">
+            <input
+              id="event-status-filter-checkbox"
+              type="checkbox"
+              class="h-5 w-5 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label
+              for="event-status-filter-checkbox"
+              class="ml-2 text-xs sm:text-sm font-medium text-slate-300"
+              >Mostrar inactivos</label
+            >
+          </div>
         </div>
 
         <!-- Filters and Action -->
@@ -708,9 +715,15 @@ const datosExportPdf = {
       }
 
       function applyFilters() {
-        const searchTerm = filterInput.value.toLowerCase();
-        const showInactive = statusCheckbox.checked;
-        const selectedZona = zonaSelect.value;
+        const filterInputEl = document.getElementById("event-filter-input") as HTMLInputElement;
+        const statusCheckboxEl = document.getElementById("event-status-filter-checkbox") as HTMLInputElement;
+        const zonaSelectEl = document.getElementById("event-zona-filter-select") as HTMLSelectElement;
+
+        if (!filterInputEl || !statusCheckboxEl || !zonaSelectEl) return;
+
+        const searchTerm = filterInputEl.value.toLowerCase();
+        const showInactive = statusCheckboxEl.checked;
+        const selectedZona = zonaSelectEl.value;
 
         for (const row of allRows) {
           const rowStatus = row.dataset.status;
@@ -735,14 +748,20 @@ const datosExportPdf = {
 
       function handleSearchInput() {
         applyFilters();
-        clearFilterBtn.classList.toggle("hidden", !filterInput.value);
+        const filterInputEl = document.getElementById("event-filter-input") as HTMLInputElement;
+        const clearFilterBtnEl = document.getElementById("event-clear-filter-btn") as HTMLElement;
+        if (filterInputEl && clearFilterBtnEl) {
+          clearFilterBtnEl.classList.toggle("hidden", !filterInputEl.value);
+        }
       }
 
       function clearSearchInput() {
-        filterInput.value = "";
+        const filterInputEl = document.getElementById("event-filter-input") as HTMLInputElement;
+        const clearFilterBtnEl = document.getElementById("event-clear-filter-btn") as HTMLElement;
+        if (filterInputEl) filterInputEl.value = "";
         applyFilters();
-        clearFilterBtn.classList.add("hidden");
-        filterInput.focus();
+        if (clearFilterBtnEl) clearFilterBtnEl.classList.add("hidden");
+        if (filterInputEl) filterInputEl.focus();
       }
 
       function showModal() {
@@ -769,11 +788,16 @@ const datosExportPdf = {
 
       // Attach listeners only once
       if (!showAttendeesBtn.dataset.initialized) {
-        filterInput.addEventListener("input", handleSearchInput);
-        clearFilterBtn.addEventListener("click", clearSearchInput);
-        statusCheckbox.addEventListener("change", applyFilters);
-        zonaSelect.addEventListener("change", applyFilters);
-        backToEventsLink.addEventListener("click", handleBackToEvents);
+        const filterInputEl = document.getElementById("event-filter-input") as HTMLInputElement;
+        const clearFilterBtnEl = document.getElementById("event-clear-filter-btn") as HTMLElement;
+        const statusCheckboxEl = document.getElementById("event-status-filter-checkbox") as HTMLInputElement;
+        const zonaSelectEl = document.getElementById("event-zona-filter-select") as HTMLSelectElement;
+
+        if (filterInputEl) filterInputEl.addEventListener("input", handleSearchInput);
+        if (clearFilterBtnEl) clearFilterBtnEl.addEventListener("click", clearSearchInput);
+        if (statusCheckboxEl) statusCheckboxEl.addEventListener("change", applyFilters);
+        if (zonaSelectEl) zonaSelectEl.addEventListener("change", applyFilters);
+        if (backToEventsLink) backToEventsLink.addEventListener("click", handleBackToEvents);
         allRows.forEach((row) =>
           row.addEventListener("click", toggleRowCheckbox),
         );
