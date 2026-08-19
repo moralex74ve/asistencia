@@ -231,6 +231,7 @@ const datosExportPdf = {
                   asistencia.miembros.status ? "activo" : "inactivo"
                 }
                 data-zona-id={asistencia.miembros.zona_id}
+                style={!asistencia.miembros.status ? "display: none;" : undefined}
               >
                 <td class="whitespace-nowrap px-4 py-2 font-medium">
                   {asistencia.miembros.nombre} {asistencia.miembros.apellido}
@@ -407,40 +408,46 @@ const datosExportPdf = {
     }
 
     function initializePage() {
-      const filterInput = document.getElementById("llegadas-filter-input");
-      const clearFilterBtn = document.getElementById(
+      const filterInputEl = document.getElementById("llegadas-filter-input") as HTMLInputElement | null;
+      const clearFilterBtnEl = document.getElementById(
         "llegadas-clear-filter-btn"
-      );
-      const statusCheckbox = document.getElementById(
+      ) as HTMLElement | null;
+      const statusCheckboxEl = document.getElementById(
         "llegadas-status-filter-checkbox"
-      );
-      const zonaSelect = document.getElementById(
+      ) as HTMLInputElement | null;
+      const zonaSelectEl = document.getElementById(
         "llegadas-zona-filter-select"
-      );
+      ) as HTMLSelectElement | null;
       const tableBody = document.getElementById("llegadas-table-body");
-      const exportPdfBtn = document.getElementById(
+      const exportPdfBtnEl = document.getElementById(
         "llegadas-export-pdf-btn"
-      );
+      ) as HTMLElement | null;
 
       if (
-        !filterInput ||
-        !clearFilterBtn ||
-        !statusCheckbox ||
-        !zonaSelect ||
+        !filterInputEl ||
+        !clearFilterBtnEl ||
+        !statusCheckboxEl ||
+        !zonaSelectEl ||
         !tableBody ||
-        !exportPdfBtn
+        !exportPdfBtnEl
       ) {
         return;
       }
 
-      const allRows = Array.from(tableBody.getElementsByTagName("tr"));
-
       function applyFilters() {
-        const searchTerm = filterInput.value.toLowerCase();
+        const filterInput = document.getElementById("llegadas-filter-input") as HTMLInputElement | null;
+        const statusCheckbox = document.getElementById("llegadas-status-filter-checkbox") as HTMLInputElement | null;
+        const zonaSelect = document.getElementById("llegadas-zona-filter-select") as HTMLSelectElement | null;
+        const tableBodyEl = document.getElementById("llegadas-table-body");
+
+        if (!filterInput || !statusCheckbox || !zonaSelect || !tableBodyEl) return;
+
+        const searchTerm = filterInput.value.toLowerCase().trim();
         const showInactive = statusCheckbox.checked;
         const selectedZona = zonaSelect.value;
+        const rows = tableBodyEl.querySelectorAll("tr");
 
-        for (const row of allRows) {
+        rows.forEach((row) => {
           const rowStatus = row.dataset.status;
           const rowZonaId = row.dataset.zonaId;
           const nameCell = row.cells[0];
@@ -452,35 +459,42 @@ const datosExportPdf = {
             selectedZona === "all" || rowZonaId === selectedZona;
           const matchesSearch =
             !searchTerm ||
-            nameCell?.textContent?.toLowerCase().includes(searchTerm) ||
-            cedulaCell?.textContent?.toLowerCase().includes(searchTerm) ||
-            telefCell?.textContent?.toLowerCase().includes(searchTerm);
+            (nameCell?.textContent?.toLowerCase().includes(searchTerm) ?? false) ||
+            (cedulaCell?.textContent?.toLowerCase().includes(searchTerm) ?? false) ||
+            (telefCell?.textContent?.toLowerCase().includes(searchTerm) ?? false);
 
           row.style.display =
             matchesStatus && matchesZona && matchesSearch ? "" : "none";
-        }
+        });
       }
 
       function handleSearchInput() {
         applyFilters();
-        clearFilterBtn.classList.toggle("hidden", !filterInput.value);
+        const clearFilterBtn = document.getElementById("llegadas-clear-filter-btn");
+        const filterInput = document.getElementById("llegadas-filter-input") as HTMLInputElement | null;
+        if (clearFilterBtn && filterInput) {
+          clearFilterBtn.classList.toggle("hidden", !filterInput.value);
+        }
       }
 
       function clearSearchInput() {
-        filterInput.value = "";
+        const filterInput = document.getElementById("llegadas-filter-input") as HTMLInputElement | null;
+        const clearFilterBtn = document.getElementById("llegadas-clear-filter-btn");
+        if (filterInput) filterInput.value = "";
         applyFilters();
-        clearFilterBtn.classList.add("hidden");
-        filterInput.focus();
+        if (clearFilterBtn) clearFilterBtn.classList.add("hidden");
+        if (filterInput) filterInput.focus();
       }
 
-      if (!exportPdfBtn.dataset.initialized) {
-        filterInput.addEventListener("input", handleSearchInput);
-        clearFilterBtn.addEventListener("click", clearSearchInput);
-        statusCheckbox.addEventListener("change", applyFilters);
-        zonaSelect.addEventListener("change", applyFilters);
-        exportPdfBtn.addEventListener("click", exportPdf);
+      if (!exportPdfBtnEl.dataset.initialized) {
+        filterInputEl.addEventListener("input", handleSearchInput);
+        clearFilterBtnEl.addEventListener("click", clearSearchInput);
+        statusCheckboxEl.addEventListener("change", applyFilters);
+        statusCheckboxEl.addEventListener("click", applyFilters);
+        zonaSelectEl.addEventListener("change", applyFilters);
+        exportPdfBtnEl.addEventListener("click", exportPdf);
 
-        exportPdfBtn.dataset.initialized = "true";
+        exportPdfBtnEl.dataset.initialized = "true";
       }
 
       applyFilters();
@@ -488,7 +502,7 @@ const datosExportPdf = {
 
       const llegadaCells = document.querySelectorAll("[data-llegada-iso]");
       llegadaCells.forEach((cell) => {
-        const iso = (cell as HTMLElement).dataset.llegadaIso;
+        const iso = (cell as HTMLTableCellElement).dataset.llegadaIso;
         if (iso) {
           const span = cell.querySelector("span");
           if (span) span.textContent = formatHoraLlegada(iso);
@@ -496,6 +510,7 @@ const datosExportPdf = {
       });
     }
 
+    initializePage();
     document.addEventListener("astro:page-load", initializePage);
   </script>
 </Layout>

@@ -341,23 +341,14 @@ const filtrosQS = filtrosParams.toString();
 <script>
   function initializePage() {
     // Get all interactive elements
-    /** @type {HTMLInputElement | null} */
-    const filterInput = document.getElementById("filter-input");
-    /** @type {HTMLButtonElement | null} */
-    const clearFilterBtn = document.getElementById("clear-filter-btn");
-    /** @type {HTMLInputElement | null} */
-    const statusCheckbox = document.getElementById("status-filter-checkbox");
-    /** @type {HTMLSelectElement | null} */
-    const zonaSelect = document.getElementById("zona-filter-select");
-    /** @type {HTMLSelectElement | null} */
-    const equipoSelect = document.getElementById("equipo-filter-select");
-    /** @type {HTMLSelectElement | null} */
-    const inactividadSelect = document.getElementById("inactividad-filter-select");
-    /** @type {HTMLTableSectionElement | null} */
+    const filterInput = document.getElementById("filter-input") as HTMLInputElement | null;
+    const clearFilterBtn = document.getElementById("clear-filter-btn") as HTMLButtonElement | null;
+    const statusCheckbox = document.getElementById("status-filter-checkbox") as HTMLInputElement | null;
+    const zonaSelect = document.getElementById("zona-filter-select") as HTMLSelectElement | null;
+    const equipoSelect = document.getElementById("equipo-filter-select") as HTMLSelectElement | null;
+    const inactividadSelect = document.getElementById("inactividad-filter-select") as HTMLSelectElement | null;
     const tableBody = document.getElementById("miembros-table-body");
-    /** @type {HTMLSpanElement | null} */
     const recordCounterLabel = document.getElementById("record-counter-label");
-    /** @type {HTMLSpanElement | null} */
     const recordCounterValue = document.getElementById("record-counter-value");
 
     if (

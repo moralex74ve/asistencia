@@ -111,6 +111,8 @@ if (Astro.request.method === "POST") {
 
     <form method="POST" data-astro-reload class="space-y-4 bg-white p-8 rounded-lg shadow-md">
       
+      <input type="hidden" name="_csrf" value={Astro.locals.csrfToken} />
+      
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre</label>
@@ -238,7 +240,7 @@ if (Astro.request.method === "POST") {
 
 <script>
   document.addEventListener('astro:page-load', () => {
-    const cancelButton = document.getElementById('cancel-button');
+    const cancelButton = document.getElementById('cancel-button') as HTMLAnchorElement;
     if (cancelButton) {
       const urlParams = new URLSearchParams(window.location.search);
       const redirectUrl = urlParams.get('redirect');
@@ -247,16 +249,16 @@ if (Astro.request.method === "POST") {
       }
     }
 
-    const kidCheckbox = document.getElementById('kids');
-    const pendienteCheckbox = document.getElementById('pendiente');
-    const cedulaInput = document.getElementById('cedula');
-    const buscarBtn = document.getElementById('buscar-cedula-btn');
-    const clearCedulaBtn = document.getElementById('clear-cedula-btn');
-    const nombreInput = document.getElementById('nombre');
-    const apellidoInput = document.getElementById('apellido');
-    const equipoSelect = document.getElementById('equipoId');
-    const discipuladoSelect = document.getElementById('discipulado');
-    const bautizadoCheckbox = document.getElementById('bautizado');
+    const kidCheckbox = document.getElementById('kids') as HTMLInputElement;
+    const pendienteCheckbox = document.getElementById('pendiente') as HTMLInputElement;
+    const cedulaInput = document.getElementById('cedula') as HTMLInputElement;
+    const buscarBtn = document.getElementById('buscar-cedula-btn') as HTMLButtonElement;
+    const clearCedulaBtn = document.getElementById('clear-cedula-btn') as HTMLButtonElement;
+    const nombreInput = document.getElementById('nombre') as HTMLInputElement;
+    const apellidoInput = document.getElementById('apellido') as HTMLInputElement;
+    const equipoSelect = document.getElementById('equipoId') as HTMLSelectElement;
+    const discipuladoSelect = document.getElementById('discipulado') as HTMLSelectElement;
+    const bautizadoCheckbox = document.getElementById('bautizado') as HTMLInputElement;
 
     if (clearCedulaBtn && cedulaInput && !clearCedulaBtn.dataset.initialized) {
       clearCedulaBtn.addEventListener('click', () => {
