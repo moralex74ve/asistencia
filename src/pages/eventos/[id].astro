@@ -547,8 +547,6 @@ const datosExportPdf = {
         49,
       );
 
-      doc.text("Listado de Asistentes", 14, 58);
-
       autoTable(doc, {
         startY: 62,
         head: [["Nombre y Apellido", "Cédula", "Teléfono", "Zona", "Equipo"]],
@@ -559,11 +557,23 @@ const datosExportPdf = {
             telef: string;
             zona: string;
             equipo: string;
-          }) => [a.nombre, a.cedula, a.telef, a.zona, a.equipo],
+          }) => [a.nombre, a.cedula.toLowerCase().startsWith("pend-") ? "__________" : a.cedula, a.telef, a.zona, a.equipo],
         ),
         styles: { fontSize: 9 },
         headStyles: { fillColor: [31, 41, 55], textColor: 255, halign: "left" },
         alternateRowStyles: { fillColor: [243, 244, 246] },
+        didDrawCell: (data: any) => {
+          if (data.column.index === 1) {
+            const cedula = String(data.cell.raw || "").toLowerCase();
+            if (cedula.startsWith("pend-")) {
+              data.cell.styles.fillColor = [255, 233, 233];
+              data.cell.styles.fontStyle = "bold";
+              data.cell.styles.textColor = [150, 0, 0];
+              data.cell.styles.lineWidth = 0.5;
+              data.cell.styles.lineColor = [200, 0, 0];
+            }
+          }
+        },
         didDrawPage: addPageNumber,
       });
 
