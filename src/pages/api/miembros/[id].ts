@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 
 /* export const prerender = false; */
 
-export const DELETE: APIRoute = async ({ params, request, cookies }) => {
+export const DELETE: APIRoute = async ({ params, request: _request, cookies }) => {
   const { id } = params;
 
   // Verificar autenticación

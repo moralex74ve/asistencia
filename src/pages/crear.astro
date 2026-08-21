@@ -83,9 +83,12 @@ if (Astro.request.method === "POST") {
       },
     });
     
-    const redirectUrl = Astro.url.searchParams.get('redirect');
-    const safeRedirect = redirectUrl?.startsWith('/') && !redirectUrl.includes('://') ? redirectUrl : "/listado";
-    return Astro.redirect(safeRedirect);
+    return Astro.redirect(
+      (() => {
+        const u = Astro.url.searchParams.get('redirect');
+        return u?.startsWith('/') && !u.includes('://') ? u : "/listado";
+      })()
+    );
 
   } catch (error) {
     console.error(error);
@@ -305,13 +308,13 @@ if (Astro.request.method === "POST") {
           const apiData = await apiRes.json();
 
           // 3. Rellenar campos con texto capitalizado
-          const capitalize = (str) => {
+          const capitalize = (str: string) => {
             if (!str) return '';
             return str
               .replace(/\s*-\s*$/, '')
               .trim()
               .split(' ')
-              .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+              .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
               .join(' ');
           };
 

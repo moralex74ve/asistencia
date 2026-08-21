@@ -246,7 +246,7 @@ const miembrosJSON = JSON.stringify(miembrosDisponibles);
   </div>
 </Layout>
 
-<script define:vars={{ miembrosJSON, integrantesJSON }}>
+<script is:inline define:vars={{ miembrosJSON, integrantesJSON }}>
   function initIntegrantes() {
     const miembros = JSON.parse(miembrosJSON);
 

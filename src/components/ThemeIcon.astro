@@ -3,7 +3,7 @@
 
 <script>
   // Función para aplicar el tema
-  function applyTheme(theme) {
+  function applyTheme(theme: 'light' | 'dark') {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
@@ -19,7 +19,7 @@
   const initialTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
   
   // Aplicar el tema inicial
-  applyTheme(initialTheme);
+  applyTheme(initialTheme as 'light' | 'dark');
 
   // Manejar el cambio de tema
   function toggleTheme() {

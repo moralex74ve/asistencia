@@ -92,7 +92,7 @@ export const PATCH: APIRoute = async ({ params, request, cookies }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ params, request, cookies }) => {
+export const DELETE: APIRoute = async ({ params, request: _request, cookies }) => {
   const { id } = params;
 
   // Verificar autenticación

@@ -48,7 +48,6 @@ if (Astro.request.method === "POST") {
     const bautizado = data.get("bautizado") === "on";
     const genero = (data.get("genero") ?? 'F') as string;
     const kids = data.get("kids") === "on";
-    const pendiente = data.get("pendiente") === "on";
 
     if (!nombre || !apellido || !cedula || !zonaId || !equipoId || !discipulado) {
       throw new Error("Nombre, Apellido, Cédula, Zona, Equipo y Discipulado son campos requeridos.");
@@ -283,13 +282,13 @@ if (Astro.request.method === "POST") {
 
           const apiData = await apiRes.json();
 
-          const capitalize = (str) => {
+          const capitalize = (str: string) => {
             if (!str) return '';
             return str
               .replace(/\s*-\s*$/, '')
               .trim()
               .split(' ')
-              .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+              .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
               .join(' ');
           };
 

@@ -217,7 +217,6 @@ const eventos = await prisma.evento.findMany({
   function initEventos() {
     const editModal = document.getElementById('edit-event-modal');
     const closeEditBtn = document.getElementById('close-edit-modal-btn');
-    const editForm = editModal?.querySelector('form');
 
     // Edit buttons
     document.querySelectorAll('.edit-event-btn').forEach(btn => {

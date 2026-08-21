@@ -4,14 +4,6 @@ import { prisma } from "../db";
 const { role } = Astro.props;
 const isUser = role === "usuario";
 
-// 1. Obtener los IDs de los últimos 40 eventos globales para el historial reciente
-const ultimosEventos = await prisma.evento.findMany({
-  orderBy: { fecha: 'desc' },
-  take: 40,
-  select: { id: true }
-});
-const idsUltimos = ultimosEventos.map(e => e.id);
-
 // 2. Obtener miembros con sus asistencias recientes
 const miembrosRaw = await prisma.miembros.findMany({
   include: {
@@ -383,7 +375,7 @@ const filtrosQS = filtrosParams.toString();
     const allRows = Array.from(tableBody.getElementsByTagName("tr"));
     const totalRecords = allRows.length;
 
-    function updateCounter(visibleRows) {
+    function updateCounter(visibleRows: number) {
       if (recordCounterLabel) recordCounterLabel.textContent = "Mostrando:";
       if (recordCounterValue)
         recordCounterValue.textContent = `${visibleRows} de ${totalRecords}`;
@@ -509,8 +501,8 @@ const filtrosQS = filtrosParams.toString();
       if (filterInput) filterInput.focus();
     }
 
-    async function handleTableClick(e) {
-      const target = e.target;
+    async function handleTableClick(e: MouseEvent) {
+      const target = e.target as HTMLElement;
       if (target.classList.contains("delete-btn")) {
         const id = target.dataset.id;
         if (

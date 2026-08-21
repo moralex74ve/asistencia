@@ -261,7 +261,7 @@ const nivelesJSON = JSON.stringify(
   </div>
 </Layout>
 
-<script
+<script is:inline
   define:vars={{ miembrosJSON, nivelesJSON }}
 >
   function initDiscipulado() {
@@ -284,18 +284,6 @@ const nivelesJSON = JSON.stringify(
       };
     }
 
-    function getRolesAsignados(excluirNivel, excluirRole) {
-      const asignados = new Set();
-      for (const [cod, roles] of Object.entries(asignaciones)) {
-        if (cod === excluirNivel) continue;
-        for (const [role, id] of Object.entries(roles)) {
-          if (role === excluirRole && id) continue;
-          if (id) asignados.add(id);
-        }
-      }
-      return asignados;
-    }
-
     function getMiembrosAsignadosEnOtroNivel(excluirNivel) {
       const asignados = new Set();
       for (const [cod, roles] of Object.entries(asignaciones)) {
@@ -311,7 +299,6 @@ const nivelesJSON = JSON.stringify(
       const dropdown = container.querySelector(".dropdown-list");
       const hiddenInput = container.querySelector('input[type="hidden"]');
       const nivelCod = container.dataset.nivel;
-      const role = container.dataset.role;
       const currentValue = hiddenInput.value;
       const searchLower = search.toLowerCase();
       const asignadosEnOtroNivel = getMiembrosAsignadosEnOtroNivel(nivelCod);
