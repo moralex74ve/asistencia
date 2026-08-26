@@ -2,13 +2,15 @@ import { defineAction } from "astro:actions";
 import { prisma } from "../../db";
 import { z } from "astro:schema";
 import bcrypt from "bcryptjs";
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
 // --- Inicio: Lógica de Rate Limiting ---
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_TIME_MS = 15 * 60 * 1000; // 15 minutos
 
-// Almacén en memoria para los intentos de login. Se reinicia con el servidor.
+// Almacén en memoria para los intentos de login.
+// ADVERTENCIA: Se reinicia con el servidor (in-memory).
+// En producción, considere usar Redis o base de datos para persistencia.
 const loginAttempts = new Map<string, { count: number; expiry: number }>();
 
 // --- Fin: Lógica de Rate Limiting ---
@@ -18,19 +20,24 @@ export const loginUser = defineAction({
   input: z.object({
     correo: z.string().email(),
     clave: z.string(),
+    _csrf: z.string().optional(),
   }),
   handler: async ({ correo, clave }, { cookies, clientAddress }) => {
     const ip = clientAddress;
 
     // --- Verificación de Rate Limiting ---
     const attempt = loginAttempts.get(ip);
-    if (attempt && attempt.count >= MAX_ATTEMPTS && Date.now() < attempt.expiry) {
+    if (
+      attempt &&
+      attempt.count >= MAX_ATTEMPTS &&
+      Date.now() < attempt.expiry
+    ) {
       const timeLeft = Math.ceil((attempt.expiry - Date.now()) / 60000);
       return {
         status: 429, // Too Many Requests
         body: {
-          message: `Demasiados intentos fallidos. Por favor, inténtelo de nuevo en ${timeLeft} minutos.`
-        }
+          message: `Demasiados intentos fallidos. Por favor, inténtelo de nuevo en ${timeLeft} minutos.`,
+        },
       };
     }
     // --- Fin de Verificación ---
@@ -54,13 +61,14 @@ export const loginUser = defineAction({
         loginAttempts.set(ip, newAttempt);
         // --- Fin de registro ---
 
-        const message = newAttempt.count >= MAX_ATTEMPTS 
-          ? `Demasiados intentos fallidos. Por favor, inténtelo de nuevo en 15 minutos.`
-          : "Credenciales inválidas";
+        const message =
+          newAttempt.count >= MAX_ATTEMPTS
+            ? `Demasiados intentos fallidos. Por favor, inténtelo de nuevo en 15 minutos.`
+            : "Credenciales inválidas";
 
         return {
           status: 401,
-          body: { message }
+          body: { message },
         };
       }
 
@@ -69,8 +77,8 @@ export const loginUser = defineAction({
         return {
           status: 403,
           body: {
-            message: "Usuario desactivado. Contacte al administrador."
-          }
+            message: "Usuario desactivado. Contacte al administrador.",
+          },
         };
       }
 
@@ -81,9 +89,9 @@ export const loginUser = defineAction({
       // Actualizar último login
       await prisma.usuarios.update({
         where: { id: user.id },
-        data: { 
-          ultimo_login: new Date()
-        }
+        data: {
+          ultimo_login: new Date(),
+        },
       });
 
       // --- Inicio: Generación de JWT ---
@@ -94,7 +102,7 @@ export const loginUser = defineAction({
           rol: user.rol,
         },
         import.meta.env.JWT_SECRET, // Cargar la clave secreta desde las variables de entorno
-        { expiresIn: '24h' } // El token expira en 24 horas
+        { expiresIn: "24h" }, // El token expira en 24 horas
       );
 
       // Establecer el token JWT en la cookie
@@ -110,15 +118,15 @@ export const loginUser = defineAction({
         status: 200,
         body: {
           message: "Login exitoso",
-        }
+        },
       };
     } catch (error) {
       console.error("Error durante el login:", error);
       return {
         status: 500,
         body: {
-          message: "Error interno del servidor"
-        }
+          message: "Error interno del servidor",
+        },
       };
     }
   },

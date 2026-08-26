@@ -1,0 +1,866 @@
+---
+// src/pages/eventos/[id].astro
+
+export const prerender = false;
+import Layout from "../../layouts/Layout.astro";
+import { prisma } from "../../db";
+
+const { id: eventoId } = Astro.params;
+
+if (!eventoId) {
+  return new Response("No se proporcionó un ID de evento", { status: 400 });
+}
+
+// Handle adding new members to the attendance list
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const miembroIdsToAdd = formData
+    .getAll("miembroIds")
+    .map((id) => id.toString());
+
+  if (miembroIdsToAdd.length > 0) {
+    try {
+      const ahora = new Date();
+      await prisma.asistencia.createMany({
+        data: miembroIdsToAdd.map((miembroId) => ({
+          evento_id: eventoId,
+          miembro_id: miembroId,
+          presente: true,
+          hora_llegada: ahora,
+        })),
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      console.error("Error al agregar miembros a la asistencia:", error);
+    }
+  }
+  return Astro.redirect(`/eventos/${eventoId}`);
+}
+
+// Fetch event details, members already in attendance (with names), and all zones
+const [evento, miembrosEnAsistencia, todasZonas] = await Promise.all([
+  prisma.evento.findUnique({ where: { id: eventoId } }),
+  prisma.asistencia.findMany({
+    where: { evento_id: eventoId },
+    include: {
+      miembros: {
+        select: {
+          nombre: true,
+          apellido: true,
+          cedula: true,
+          telef: true,
+          genero: true,
+          zonas: true,
+          equipo: true,
+        },
+      },
+    },
+    orderBy: {
+      miembros: {
+        nombre: "asc",
+      },
+    },
+  }),
+  prisma.zonas.findMany({ orderBy: { nombre_zona: "asc" } }),
+]);
+
+if (!evento) {
+  return new Response("Evento no encontrado", { status: 404 });
+}
+
+const idsMiembrosEnAsistencia = miembrosEnAsistencia.map((a) => a.miembro_id);
+
+// Fetch all members that are NOT already in the attendance list
+const miembros = await prisma.miembros.findMany({
+  where: {
+    id: {
+      notIn: idsMiembrosEnAsistencia,
+    },
+  },
+  include: {
+    zonas: true,
+  },
+  orderBy: { nombre: "asc" },
+});
+
+const zonaIdsEnLista = [...new Set(miembros.map((m) => m.zona_id))];
+const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
+
+const esNino = (a: { miembros: { cedula: string } }) =>
+  a.miembros.cedula.toLowerCase().startsWith("kids-");
+const adultos = miembrosEnAsistencia.filter((a) => !esNino(a));
+const ninos = miembrosEnAsistencia.filter((a) => esNino(a));
+const generoDe = (a: { miembros: { genero: string | null } }) =>
+  (a.miembros.genero || "F").toUpperCase();
+
+const datosExportPdf = {
+  eventoId,
+  eventoNombre: evento.nombre,
+  totalAsistentes: miembrosEnAsistencia.length,
+  totalNinos: ninos.length,
+  totalHombresAdultos: adultos.filter((a) => generoDe(a) === "M").length,
+  totalMujeresAdultas: adultos.filter((a) => generoDe(a) === "F").length,
+  totalNinosHombres: ninos.filter((a) => generoDe(a) === "M").length,
+  totalNinosMujeres: ninos.filter((a) => generoDe(a) === "F").length,
+  asistentesPorEquipo: Array.from(
+    miembrosEnAsistencia
+      .reduce((map, a) => {
+        const equipo = a.miembros.equipo?.des_equipo || "Sin equipo";
+        map.set(equipo, (map.get(equipo) || 0) + 1);
+        return map;
+      }, new Map<string, number>())
+      .entries(),
+  )
+    .map(([equipo, total]) => ({ equipo, total }))
+    .sort((a, b) => a.equipo.localeCompare(b.equipo)),
+  asistentes: miembrosEnAsistencia.map((a) => ({
+    nombre: `${a.miembros.nombre} ${a.miembros.apellido}`,
+    cedula: a.miembros.cedula,
+    telef: a.miembros.telef || "",
+    zona: a.miembros.zonas?.nombre_zona || "",
+    equipo: a.miembros.equipo?.des_equipo || "",
+  })),
+  asistentesSinNinos: adultos.map((a) => ({
+    nombre: `${a.miembros.nombre} ${a.miembros.apellido}`,
+    cedula: a.miembros.cedula,
+    telef: a.miembros.telef || "",
+  })),
+};
+---
+
+<Layout title={`Agregar Miembros a ${evento.nombre}`}>
+  <div class="container mx-auto px-4 py-2 text-slate-50">
+    <a
+      id="back-to-events-link"
+      href="/eventos"
+      class="text-blue-400 hover:underline mb-4 inline-block"
+      >&larr; Volver a todos los eventos</a
+    >
+    <h1 class="text-xl sm:text-xs lg:text-4xl font-bold break-words">{evento.nombre}</h1>
+    <p class="hidden sm:block sm:text-xs lg:text-lg text-gray-400 mb-2">
+      {
+        new Date(evento.fecha).toLocaleDateString("es-ES", {
+          timeZone: "UTC",
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+      }
+    </p>
+
+    <div class="text-md text-gray-300 mb-6 flex flex-wrap items-center gap-2 sm:gap-3">
+      <span class="sm:hidden sm:text-xs lg:text-lg font-semibold">Total:</span>
+      <span class="hidden sm:inline sm:text-xs lg:text-lg font-semibold"
+        >Miembros en este evento:</span
+      >
+      <span
+        id="attendee-count"
+        class="bg-blue-900 text-blue-200 text-sm font-bold px-2.5 py-0.5 rounded-full"
+        >{miembrosEnAsistencia.length}</span
+      >
+      <a
+        href={`/crear?redirect=/eventos/${eventoId}`}
+        title="Agregar Miembro"
+        class="p-2 bg-blue-600 hover:bg-blue-500 rounded-full"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </a>
+      <button
+        id="event-show-attendees-btn"
+        type="button"
+        title="Ver lista de miembros"
+        class="p-2 bg-slate-700 hover:bg-slate-600 rounded-full"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </button>
+      <button
+        id="event-export-pdf-btn"
+        type="button"
+        title="Exportar listado a PDF"
+        class="inline-flex items-center gap-1.5 rounded-lg bg-red-700 hover:bg-red-600 px-3 py-2 text-xs font-medium text-white"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+            clip-rule="evenodd"></path>
+        </svg>
+        <span class="hidden sm:inline">Exportar PDF</span>
+      </button>
+      <button
+        id="event-export-asistentes-pdf-btn"
+        type="button"
+        title="Exportar listado de asistentes a PDF"
+        class="inline-flex items-center gap-1.5 rounded-lg bg-red-700 hover:bg-red-600 px-3 py-2 text-xs font-medium text-white"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+            clip-rule="evenodd"></path>
+        </svg>
+        <span class="hidden sm:inline">Listado de Asistentes</span>
+      </button>
+      <a
+        href={`/eventos/${eventoId}/llegadas`}
+        class="inline-flex items-center gap-1.5 rounded-lg bg-green-700 hover:bg-green-600 px-3 py-2 text-xs font-medium text-white"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+            clip-rule="evenodd"></path>
+        </svg>
+        <span class="hidden sm:inline">Ver Llegadas</span>
+      </a>
+    </div>
+
+    <h2 class="sm:text-xs sm:mb-0 lg:text-xl font-semibold mb-1">
+      Agregar Miembros al Evento
+    </h2>
+
+    <form method="POST">
+      <input type="hidden" name="_csrf" value={Astro.locals.csrfToken} />
+      <div
+        class="mb-1 flex flex-wrap items-center justify-between lg:gap-3 sm:gap-1 sm:p-2 lg:p-4 bg-base-200 rounded-lg"
+      >
+        <!-- Search -->
+        <div class="flex w-full items-center gap-3 sm:w-auto">
+          <div class="relative">
+            <input
+              type="text"
+              id="event-filter-input"
+              placeholder="Buscar..."
+              class="text-xs w-full max-w-xs pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+            />
+            <button
+              id="event-clear-filter-btn"
+              type="button"
+              class="absolute inset-y-0 right-0 items-center pr-3 hidden"
+              aria-label="Limpiar búsqueda"
+            >
+              <svg
+                class="h-5 w-5 text-gray-400 hover:text-gray-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                ><path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"></path></svg
+              >
+            </button>
+          </div>
+          <div class="flex items-center flex-shrink-0">
+            <input
+              id="event-status-filter-checkbox"
+              type="checkbox"
+              class="h-5 w-5 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label
+              for="event-status-filter-checkbox"
+              class="ml-2 text-xs sm:text-sm font-medium text-slate-300"
+              >Mostrar inactivos</label
+            >
+          </div>
+        </div>
+
+        <!-- Filters and Action -->
+        <div class="flex flex-wrap items-center justify-start gap-2 sm:gap-4">
+
+          <select
+            id="event-zona-filter-select"
+            class="block w-full rounded-md border-gray-300 bg-white px-3 py-1 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:w-auto sm:max-w-xs"
+          >
+            <option value="all">Todas las zonas</option>
+            {
+              zonas.map((zona) => (
+                <option value={zona.id}>{zona.nombre_zona}</option>
+              ))
+            }
+          </select>
+
+          <button
+            type="submit"
+            class="inline-block w-full rounded bg-green-600 px-4 py-2 text-xs font-medium text-white hover:bg-green-700 sm:w-auto"
+          >
+            Incluir Seleccionados
+          </button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-lg border border-gray-700 shadow-md">
+        <table
+          class="table-fixed min-w-full divide-y-2 divide-gray-700 bg-slate-800 text-sm"
+        >
+          <thead class="bg-slate-900">
+            <tr>
+              <th class="w-12 px-4 py-2"> </th>
+              <th class="whitespace-nowrap px-4 py-2 font-medium text-left"
+                >Nombre y Apellido</th
+              >
+              <th class="whitespace-nowrap px-4 py-2 font-medium text-left"
+                >Cédula</th
+              >
+              <th class="whitespace-nowrap px-4 py-2 font-medium text-left"
+                >Teléfono</th
+              >
+              <th class="whitespace-nowrap px-4 py-2 font-medium text-left"
+                >Status</th
+              >
+              <th class="whitespace-nowrap px-4 py-2 font-medium text-left"
+                >Zona</th
+              >
+            </tr>
+          </thead>
+          <tbody
+            id="event-miembros-table-body"
+            class="divide-y divide-gray-700"
+          >
+            {
+              miembros.map((miembro) => (
+                <tr
+                  data-status={miembro.status ? "activo" : "inactivo"}
+                  data-zona-id={miembro.zona_id}
+                  style={!miembro.status ? "display: none;" : undefined}
+                  class="cursor-pointer"
+                >
+                  <td class="px-4 py-2">
+                    <input
+                      type="checkbox"
+                      name="miembroIds"
+                      value={miembro.id}
+                      class="member-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-2 font-medium">
+                    {miembro.nombre} {miembro.apellido}
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-2 text-gray-400">
+                    {miembro.cedula}
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-2 text-gray-400">
+                    {miembro.telef}
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-2 text-gray-400">
+                    <span
+                      class:list={[
+                        "px-2 py-1 rounded-full text-xs font-semibold",
+                        miembro.status
+                          ? "bg-green-900 text-green-300"
+                          : "bg-red-900 text-red-300",
+                      ]}
+                    >
+                      {miembro.status ? "Activo" : "Inactivo"}
+                    </span>
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-2 text-gray-400">
+                    {miembro.zonas.nombre_zona}
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      {
+        miembros.length === 0 && (
+          <div class="text-center py-10 mt-4 bg-base-200 rounded-lg">
+            <p class="mb-4">No hay más miembros para agregar a este evento.</p>
+            <p>
+              Todos los miembros registrados ya están en la lista de asistencia.
+            </p>
+          </div>
+        )
+      }
+    </form>
+  </div>
+
+  <!-- Attendee List Modal -->
+  <div
+    id="event-attendee-modal"
+    class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4"
+    style="display: none;"
+  >
+    <div
+      class="bg-slate-800 text-slate-50 rounded-lg shadow-xl p-6 w-full max-w-md mx-auto"
+    >
+      <div
+        class="flex justify-between items-center mb-4 border-b border-slate-600 pb-2"
+      >
+        <h3 class="text-sm lg:text-xl font-bold">Miembros en el Evento</h3>
+        <button
+          id="event-close-modal-btn"
+          type="button"
+          class="text-2xl font-bold p-1 hover:text-red-500">&times;</button
+        >
+      </div>
+      <ul id="attendee-list" class="space-y-2 max-h-96 overflow-y-auto">
+        {
+          miembrosEnAsistencia.map((asistencia) => (
+            <li class="bg-slate-700 p-3 rounded-md text-xs lg:text-md flex justify-between items-center">
+              <div class="flex flex-col min-w-0">
+                <span class="truncate">
+                  {asistencia.miembros.nombre} {asistencia.miembros.apellido}
+                </span>
+                {asistencia.hora_llegada && (
+                  <span class="text-green-400 text-xs">
+                    Llegó:{" "}
+                    {new Date(asistencia.hora_llegada).toLocaleTimeString(
+                      "es-ES",
+                      { hour: "2-digit", minute: "2-digit" },
+                    )}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                class="remove-attendee-btn text-red-400 hover:text-red-300 p-1"
+                data-asistencia-id={asistencia.id}
+                title="Quitar del evento"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </li>
+          ))
+        }
+        {
+          miembrosEnAsistencia.length === 0 && (
+            <li id="no-attendees-msg" class="text-gray-400 text-center p-4">
+              Aún no hay miembros en este evento.
+            </li>
+          )
+        }
+      </ul>
+    </div>
+  </div>
+
+  <script
+    is:inline
+    id="event-export-data"
+    type="application/json"
+    set:html={JSON.stringify(datosExportPdf)}
+  />
+  <script>
+    import { jsPDF } from "jspdf";
+    import autoTable from "jspdf-autotable";
+
+    function exportPdf() {
+      const dataEl = document.getElementById("event-export-data");
+      const exportData = dataEl
+        ? JSON.parse(dataEl.textContent || "null")
+        : null;
+
+      if (!exportData || exportData.asistentes.length === 0) {
+        alert("No hay miembros en el evento para exportar.");
+        return;
+      }
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      const addPageNumber = (data: { pageNumber: number; doc: jsPDF }) => {
+        data.doc.setFontSize(8);
+        data.doc.setTextColor(130);
+        data.doc.text(
+          `Página ${data.pageNumber}`,
+          pageWidth - 14,
+          pageHeight - 8,
+          {
+            align: "right",
+          },
+        );
+      };
+
+      doc.setFontSize(16);
+      doc.setTextColor(20);
+      doc.text(`Listado de Asistentes - ${exportData.eventoNombre}`, 14, 16);
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(
+        `Fecha de exportación: ${new Date().toLocaleDateString("es-ES")}`,
+        14,
+        22,
+      );
+
+      doc.setFontSize(12);
+      doc.setTextColor(20);
+      doc.text(`Total de asistentes: ${exportData.totalAsistentes}`, 14, 31);
+      doc.text(`Total de niños: ${exportData.totalNinos}`, 14, 37);
+      doc.text(
+        `Adultos - Hombres (M): ${exportData.totalHombresAdultos} | Mujeres (F): ${exportData.totalMujeresAdultas}`,
+        14,
+        43,
+      );
+      doc.text(
+        `Niños - Hombres (M): ${exportData.totalNinosHombres} | Mujeres (F): ${exportData.totalNinosMujeres}`,
+        14,
+        49,
+      );
+
+      autoTable(doc, {
+        startY: 62,
+        head: [["Nombre y Apellido", "Cédula", "Teléfono", "Zona", "Equipo"]],
+        body: exportData.asistentes.map(
+          (a: {
+            nombre: string;
+            cedula: string;
+            telef: string;
+            zona: string;
+            equipo: string;
+          }) => [a.nombre, a.cedula.toLowerCase().startsWith("pend-") ? "__________" : a.cedula, a.telef, a.zona, a.equipo],
+        ),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [31, 41, 55], textColor: 255, halign: "left" },
+        alternateRowStyles: { fillColor: [243, 244, 246] },
+        didDrawCell: (data: any) => {
+          if (data.column.index === 1) {
+            const cedula = String(data.cell.raw || "").toLowerCase();
+            if (cedula.startsWith("pend-")) {
+              data.cell.styles.fillColor = [255, 233, 233];
+              data.cell.styles.fontStyle = "bold";
+              data.cell.styles.textColor = [150, 0, 0];
+              data.cell.styles.lineWidth = 0.5;
+              data.cell.styles.lineColor = [200, 0, 0];
+            }
+          }
+        },
+        didDrawPage: addPageNumber,
+      });
+
+      const lastAutoTable = (
+        doc as unknown as { lastAutoTable?: { finalY?: number } }
+      ).lastAutoTable;
+      const teamSectionY = (lastAutoTable?.finalY ?? 50) + 12;
+
+      doc.setFontSize(12);
+      doc.setTextColor(20);
+      doc.text("Asistentes por Equipo", 14, teamSectionY);
+
+      autoTable(doc, {
+        startY: teamSectionY + 4,
+        head: [["Equipo", "Total de Asistentes"]],
+        body: exportData.asistentesPorEquipo.map(
+          (e: { equipo: string; total: number }) => [e.equipo, String(e.total)],
+        ),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [31, 41, 55], textColor: 255, halign: "left" },
+        alternateRowStyles: { fillColor: [243, 244, 246] },
+        didDrawPage: addPageNumber,
+      });
+
+      doc.save(`integrantes-${exportData.eventoId}.pdf`);
+    }
+
+    function exportAsistentesPdf() {
+      const dataEl = document.getElementById("event-export-data");
+      const exportData = dataEl
+        ? JSON.parse(dataEl.textContent || "null")
+        : null;
+
+      if (!exportData || exportData.asistentesSinNinos.length === 0) {
+        alert("No hay asistentes en el evento para exportar.");
+        return;
+      }
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      const addPageNumber = (data: { pageNumber: number; doc: jsPDF }) => {
+        data.doc.setFontSize(8);
+        data.doc.setTextColor(130);
+        data.doc.text(
+          `Página ${data.pageNumber}`,
+          pageWidth - 14,
+          pageHeight - 8,
+          { align: "right" }
+        );
+      };
+
+      doc.setFontSize(16);
+      doc.setTextColor(20);
+      doc.text(`Listado de Asistentes - ${exportData.eventoNombre}`, 14, 16);
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(
+        `Fecha de exportación: ${new Date().toLocaleDateString("es-ES")}`,
+        14,
+        22
+      );
+
+      doc.setFontSize(12);
+      doc.setTextColor(20);
+      doc.text(`Total de asistentes: ${exportData.asistentesSinNinos.length}`, 14, 31);
+
+      autoTable(doc, {
+        startY: 35,
+        head: [["#", "Nombre y Apellido", "Cédula", "Teléfono", "Firma"]],
+        body: exportData.asistentesSinNinos.map(
+          (a: { nombre: string; cedula: string; telef: string }, i: number) => [
+            String(i + 1),
+            a.nombre,
+            a.cedula.toLowerCase().startsWith("pend-") ? "__________" : a.cedula,
+            a.telef,
+            "____________________",
+          ]
+        ),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [31, 41, 55], textColor: 255, halign: "left" },
+        alternateRowStyles: { fillColor: [243, 244, 246] },
+        columnStyles: {
+          0: { cellWidth: 10 },
+          4: { cellWidth: 40 },
+        },
+        didDrawCell: (data: any) => {
+          if (data.column.index === 2) {
+            const cedula = String(data.cell.raw || "").toLowerCase();
+            if (cedula.startsWith("pend-")) {
+              data.cell.styles.fillColor = [255, 233, 233];
+              data.cell.styles.fontStyle = "bold";
+              data.cell.styles.textColor = [150, 0, 0];
+              data.cell.styles.lineWidth = 0.5;
+              data.cell.styles.lineColor = [200, 0, 0];
+            }
+          }
+        },
+        didDrawPage: addPageNumber,
+      });
+
+      doc.save(`asistentes-${exportData.eventoId}.pdf`);
+    }
+
+    function initializePage() {
+      const filterInput = document.getElementById("event-filter-input") as HTMLInputElement | null;
+      const clearFilterBtn = document.getElementById("event-clear-filter-btn") as HTMLElement | null;
+      const statusCheckbox = document.getElementById(
+        "event-status-filter-checkbox",
+      ) as HTMLInputElement | null;
+      const zonaSelect = document.getElementById("event-zona-filter-select") as HTMLSelectElement | null;
+      const tableBody = document.getElementById("event-miembros-table-body");
+
+      // Modal elements
+      const showAttendeesBtn = document.getElementById(
+        "event-show-attendees-btn",
+      ) as HTMLElement | null;
+      const attendeeModal = document.getElementById("event-attendee-modal");
+      const closeModalBtn = document.getElementById("event-close-modal-btn");
+
+      const exportPdfBtn = document.getElementById("event-export-pdf-btn");
+      const exportAsistentesPdfBtn = document.getElementById("event-export-asistentes-pdf-btn");
+      const backToEventsLink = document.getElementById("back-to-events-link");
+
+      if (
+        !filterInput ||
+        !tableBody ||
+        !clearFilterBtn ||
+        !statusCheckbox ||
+        !zonaSelect ||
+        !showAttendeesBtn ||
+        !attendeeModal ||
+        !closeModalBtn ||
+        !exportPdfBtn ||
+        !exportAsistentesPdfBtn ||
+        !backToEventsLink
+      ) {
+        return;
+      }
+
+      function applyFilters() {
+        const filterInputEl = document.getElementById("event-filter-input") as HTMLInputElement | null;
+        const statusCheckboxEl = document.getElementById("event-status-filter-checkbox") as HTMLInputElement | null;
+        const zonaSelectEl = document.getElementById("event-zona-filter-select") as HTMLSelectElement | null;
+        const tableBodyEl = document.getElementById("event-miembros-table-body");
+
+        if (!filterInputEl || !statusCheckboxEl || !zonaSelectEl || !tableBodyEl) return;
+
+        const searchTerm = filterInputEl.value.toLowerCase().trim();
+        const showInactive = statusCheckboxEl.checked;
+        const selectedZona = zonaSelectEl.value;
+        const rows = tableBodyEl.querySelectorAll("tr");
+
+        rows.forEach((row) => {
+          const rowStatus = row.dataset.status;
+          const rowZonaId = row.dataset.zonaId;
+          const nameCell = row.cells[1];
+          const cedulaCell = row.cells[2];
+          const telefCell = row.cells[3];
+
+          const matchesStatus = showInactive || rowStatus === "activo";
+          const matchesZona =
+            selectedZona === "all" || rowZonaId === selectedZona;
+          const matchesSearch =
+            !searchTerm ||
+            (nameCell?.textContent?.toLowerCase().includes(searchTerm) ?? false) ||
+            (cedulaCell?.textContent?.toLowerCase().includes(searchTerm) ?? false) ||
+            (telefCell?.textContent?.toLowerCase().includes(searchTerm) ?? false);
+
+          row.style.display =
+            matchesStatus && matchesZona && matchesSearch ? "" : "none";
+        });
+      }
+
+      function handleSearchInput() {
+        applyFilters();
+        const filterInputEl = document.getElementById("event-filter-input") as HTMLInputElement | null;
+        const clearFilterBtnEl = document.getElementById("event-clear-filter-btn") as HTMLElement | null;
+        if (filterInputEl && clearFilterBtnEl) {
+          clearFilterBtnEl.classList.toggle("hidden", !filterInputEl.value);
+        }
+      }
+
+      function clearSearchInput() {
+        const filterInputEl = document.getElementById("event-filter-input") as HTMLInputElement | null;
+        const clearFilterBtnEl = document.getElementById("event-clear-filter-btn") as HTMLElement | null;
+        if (filterInputEl) filterInputEl.value = "";
+        applyFilters();
+        if (clearFilterBtnEl) clearFilterBtnEl.classList.add("hidden");
+        if (filterInputEl) filterInputEl.focus();
+      }
+
+      function showModal() {
+        attendeeModal.style.display = "flex";
+      }
+
+      function hideModal() {
+        attendeeModal.style.display = "none";
+      }
+
+      function handleBackToEvents(e: MouseEvent) {
+        const memberCheckboxes = document.querySelectorAll(
+          ".member-checkbox:checked",
+        );
+        if (memberCheckboxes.length > 0) {
+          const confirmation = confirm(
+            "Hay miembros seleccionados. ¿Desea descartar la selección y volver?",
+          );
+          if (!confirmation) {
+            e.preventDefault();
+          }
+        }
+      }
+
+      // Attach listeners only once per element
+      if (!showAttendeesBtn.dataset.initialized) {
+        filterInput.addEventListener("input", handleSearchInput);
+        clearFilterBtn.addEventListener("click", clearSearchInput);
+        statusCheckbox.addEventListener("change", applyFilters);
+        statusCheckbox.addEventListener("click", applyFilters);
+        zonaSelect.addEventListener("change", applyFilters);
+        backToEventsLink.addEventListener("click", handleBackToEvents);
+
+        tableBody.addEventListener("click", (e) => {
+          const target = e.target as HTMLElement;
+          if (target.tagName === "INPUT" || target.closest("button") || target.closest("a")) return;
+          const row = target.closest("tr");
+          if (!row) return;
+          const checkbox = row.querySelector(".member-checkbox") as HTMLInputElement | null;
+          if (checkbox) checkbox.checked = !checkbox.checked;
+        });
+
+        // Modal listeners
+        showAttendeesBtn.addEventListener("click", showModal);
+        closeModalBtn.addEventListener("click", hideModal);
+        exportPdfBtn.addEventListener("click", exportPdf);
+        exportAsistentesPdfBtn.addEventListener("click", exportAsistentesPdf);
+        attendeeModal.addEventListener("click", (e) => {
+          if (e.target === attendeeModal) {
+            hideModal();
+          }
+        });
+
+        // Remove attendee functionality
+        const removeButtons = document.querySelectorAll(".remove-attendee-btn");
+        removeButtons.forEach((btn) => {
+          btn.addEventListener("click", async (e) => {
+            const button = e.currentTarget as HTMLButtonElement;
+            const asistenciaId = button.dataset.asistenciaId;
+
+            if (
+              !confirm(
+                "¿Está seguro de que desea quitar a este miembro del evento?",
+              )
+            ) {
+              return;
+            }
+
+            try {
+              const response = await fetch(`/api/asistencia/${asistenciaId}`, {
+                method: "DELETE",
+              });
+
+              if (response.ok) {
+                // Refresh the page to update the table
+                window.location.reload();
+              } else {
+                alert("Error al eliminar");
+              }
+            } catch (error) {
+              console.error("Error:", error);
+              alert("Error al eliminar");
+            }
+          });
+        });
+
+        showAttendeesBtn.dataset.initialized = "true";
+      }
+
+      filterInput?.focus();
+
+      applyFilters();
+      handleSearchInput();
+    }
+
+    initializePage();
+    document.addEventListener("astro:page-load", initializePage);
+  </script>
+</Layout>

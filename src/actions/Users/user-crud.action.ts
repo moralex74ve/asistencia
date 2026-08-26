@@ -1,39 +1,45 @@
 import { defineAction, type ActionAPIContext } from "astro:actions";
 import { prisma } from "../../db";
-import { z } from 'astro:schema';
-import bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
+import { z } from "astro:schema";
+import bcrypt from "bcryptjs";
+import { v4 as uuidv4 } from "uuid";
+import { validateCsrfToken } from "../../utils/csrf";
 
 // Esquema común para usuario
 const UserSchema = z.object({
   nombre: z.string().min(2).max(50),
   correo: z.string().email().max(100),
   clave: z.string().min(6),
-  rol: z.enum(['usuario', 'admin']),
+  rol: z.enum(["usuario", "admin"]),
+  _csrf: z.string().optional(),
 });
 
-// Tipo correcto para locals.user (viene del JWT en el middleware)
-interface JWTUser {
-  id: string;
-  rol: string;
-}
+// Función para validar CSRF token en actions
+async function validateCsrf(context: ActionAPIContext): Promise<boolean> {
+  const formData = await context.request.clone().formData();
+  const csrfToken = formData.get("_csrf");
+  const cookieToken = context.cookies.get("csrf_session")?.value;
 
-interface CustomActionLocals {
-  user?: JWTUser;
-}
-
-interface CustomActionAPIContext extends ActionAPIContext {
-  locals: CustomActionLocals;
+  if (!csrfToken || !cookieToken) return false;
+  return validateCsrfToken(csrfToken as string);
 }
 
 // Función reutilizable para verificar la autorización del administrador
-function isAdmin(context: CustomActionAPIContext) {
+function isAdmin(context: ActionAPIContext) {
   const user = context.locals.user;
   if (!user) {
-    return { success: false, status: 401, message: "No autorizado: Sesión de usuario no encontrada." };
+    return {
+      success: false,
+      status: 401,
+      message: "No autorizado: Sesión de usuario no encontrada.",
+    };
   }
-  if (user.rol !== 'admin') {
-    return { success: false, status: 403, message: "Prohibido: No tienes permisos de administrador." };
+  if (user.rol !== "admin") {
+    return {
+      success: false,
+      status: 403,
+      message: "Prohibido: No tienes permisos de administrador.",
+    };
   }
   return { success: true };
 }
@@ -42,20 +48,24 @@ export const createUser = defineAction({
   accept: "form",
   input: UserSchema,
   handler: async ({ nombre, correo, clave, rol }, context) => {
-    const auth = isAdmin(context as CustomActionAPIContext); // Cast context here
+    // Validar CSRF
+    if (!(await validateCsrf(context))) {
+      return { status: 403, body: { message: "Token CSRF inválido" } };
+    }
+    const auth = isAdmin(context);
     if (!auth.success) {
       return { status: auth.status, body: { message: auth.message } };
     }
 
     try {
       const existingUser = await prisma.usuarios.findUnique({
-        where: { correo }
+        where: { correo },
       });
 
       if (existingUser) {
         return {
           status: 400,
-          body: { message: "El usuario ya existe" }
+          body: { message: "El usuario ya existe" },
         };
       }
 
@@ -70,8 +80,8 @@ export const createUser = defineAction({
           rol,
           activo: true,
           creado_en: new Date(),
-          ultimo_login: null
-        }
+          ultimo_login: null,
+        },
       });
 
       return {
@@ -85,18 +95,18 @@ export const createUser = defineAction({
             correo: newUser.correo,
             rol: newUser.rol,
             activo: newUser.activo,
-            creado_en: newUser.creado_en
-          }
-        }
+            creado_en: newUser.creado_en,
+          },
+        },
       };
     } catch (error) {
-      console.error('Error al crear el usuario:', error);
+      console.error("Error al crear el usuario:", error);
       return {
         status: 500,
-        body: { message: "Error interno del servidor" }
+        body: { message: "Error interno del servidor" },
       };
     }
-  }
+  },
 });
 
 export const updateUser = defineAction({
@@ -104,23 +114,27 @@ export const updateUser = defineAction({
   input: UserSchema.extend({
     id: z.string(),
     activo: z.boolean().optional(),
-    clave: z.string().min(6).optional()
+    clave: z.string().min(6).optional(),
   }),
   handler: async ({ id, nombre, correo, clave, rol, activo }, context) => {
-    const auth = isAdmin(context as CustomActionAPIContext); // Cast context here
+    // Validar CSRF
+    if (!(await validateCsrf(context))) {
+      return { status: 403, body: { message: "Token CSRF inválido" } };
+    }
+    const auth = isAdmin(context);
     if (!auth.success) {
       return { status: auth.status, body: { message: auth.message } };
     }
 
     try {
       const existingUser = await prisma.usuarios.findUnique({
-        where: { id }
+        where: { id },
       });
 
       if (!existingUser) {
         return {
           status: 404,
-          body: { message: "Usuario no encontrado" }
+          body: { message: "Usuario no encontrado" },
         };
       }
 
@@ -138,7 +152,7 @@ export const updateUser = defineAction({
 
       const updatedUser = await prisma.usuarios.update({
         where: { id },
-        data: updateData
+        data: updateData,
       });
 
       return {
@@ -152,57 +166,65 @@ export const updateUser = defineAction({
             correo: updatedUser.correo,
             rol: updatedUser.rol,
             activo: updatedUser.activo,
-            actualizado_en: updatedUser.actualizado_en
-          }
-        }
+            actualizado_en: updatedUser.actualizado_en,
+          },
+        },
       };
     } catch (error) {
-      console.error('Error al actualizar el usuario:', error);
+      console.error("Error al actualizar el usuario:", error);
       return {
         status: 500,
-        body: { message: "Error interno del servidor" }
+        body: { message: "Error interno del servidor" },
       };
     }
-  }
+  },
 });
 
 export const deleteUser = defineAction({
   accept: "form",
   input: z.object({
-    id: z.string()
+    id: z.string(),
   }),
-  handler: async ({ id }, context): Promise<{ success: boolean; message: string }> => {
-    const auth = isAdmin(context as CustomActionAPIContext); // Cast context here
+  handler: async (
+    { id },
+    context,
+  ): Promise<{ success: boolean; message: string }> => {
+    // Validar CSRF
+    if (!(await validateCsrf(context))) {
+      return { success: false, message: "Token CSRF inválido" };
+    }
+    const auth = isAdmin(context);
     if (!auth.success) {
       return { success: false, message: auth.message };
     }
 
     try {
       const userExists = await prisma.usuarios.findUnique({
-        where: { id }
+        where: { id },
       });
 
       if (!userExists) {
         return {
           success: false,
-          message: "Usuario no encontrado"
+          message: "Usuario no encontrado",
         };
       }
 
       await prisma.usuarios.delete({
-        where: { id }
+        where: { id },
       });
 
       return {
         success: true,
-        message: "Usuario eliminado correctamente"
+        message: "Usuario eliminado correctamente",
       };
     } catch (error) {
       console.error("Error al eliminar usuario:", error);
       return {
         success: false,
-        message: "No se pudo eliminar el usuario. Verifique que no tenga registros relacionados."
+        message:
+          "No se pudo eliminar el usuario. Verifique que no tenga registros relacionados.",
       };
     }
-  }
+  },
 });

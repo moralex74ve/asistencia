@@ -1,0 +1,12 @@
+{
+  "sessions": [
+    {
+      "id": "d9963474",
+      "created_at": "2026-04-30T19:54:17.146438200Z",
+      "updated_at": "2026-04-30T20:02:13.826410200Z",
+      "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+      "summary": "hola",
+      "message_count": 8
+    }
+  ]
+}

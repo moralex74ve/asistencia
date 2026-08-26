@@ -1,0 +1,44 @@
+/* empty css                                 */
+import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, h as addAttribute, l as renderScript, o as createTransitionScope } from '../chunks/astro/server_BGMrdG95.mjs';
+import 'kleur/colors';
+import { $ as $$Layout } from '../chunks/Layout_XNCnAOZu.mjs';
+import { a as actions } from '../chunks/_astro_actions_CCHzB65Z.mjs';
+/* empty css                                 */
+export { renderers } from '../renderers.mjs';
+
+const $$Astro = createAstro("https://moralex74.duckdns.org");
+const prerender = false;
+const $$Login = createComponent(($$result, $$props, $$slots) => {
+  const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
+  Astro2.self = $$Login;
+  const session = Astro2.cookies.get("session");
+  if (session) {
+    return Astro2.redirect("/dashboard");
+  }
+  const result = Astro2.getActionResult(actions.loginUser);
+  if (result?.data?.status === 200) {
+    return Astro2.redirect("/dashboard");
+  }
+  return renderTemplate`${renderComponent($$result, "Layout", $$Layout, { "title": "Login" }, { "default": ($$result2) => renderTemplate` ${maybeRenderHead()}<main class="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"> <div class="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg"> <div class="text-center"> <h1 class="text-3xl font-bold text-gray-900 mb-2">Login</h1> ${result?.data?.body?.message && renderTemplate`<h2 class="text-sm text-red-500 mb-4 text-center"> ${result.data.body.message} </h2>`} </div> <form class="mt-8 space-y-6"${addAttribute(actions.loginUser, "action")} method="POST"> <input type="hidden" name="_csrf"${addAttribute(Astro2.locals.csrfToken, "value")}> <div class="rounded-md shadow-sm -space-y-px"> <div class="mb-4"> <label for="correo" class="sr-only">Email</label> <input id="correo" name="correo" type="email" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="Email"${addAttribute(createTransitionScope($$result2, "jx2ghr5m"), "data-astro-transition-persist")}> </div> <div> <label for="clave" class="sr-only">Contraseña</label> <input id="clave" name="clave" type="password" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="Contraseña"> </div> </div> <div class="flex items-center"> <input id="show-password" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"> <label for="show-password" class="ml-2 block text-sm text-gray-900 cursor-pointer">
+Mostrar contraseña
+</label> </div> <div> <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+Iniciar Sesión
+</button> </div> </form> ${Astro2.url.searchParams.get("logout") === "success" && renderTemplate`<div class="mb-4 p-3 bg-green-100 text-green-700 rounded text-center">
+Has cerrado sesión correctamente.
+</div>`} </div> </main> ${renderScript($$result2, "C:/Users/PC/Documents/Dev/Asistencia/src/pages/login.astro?astro&type=script&index=0&lang.ts")} ` })}`;
+}, "C:/Users/PC/Documents/Dev/Asistencia/src/pages/login.astro", "self");
+
+const $$file = "C:/Users/PC/Documents/Dev/Asistencia/src/pages/login.astro";
+const $$url = "/login";
+
+const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: $$Login,
+  file: $$file,
+  prerender,
+  url: $$url
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const page = () => _page;
+
+export { page };

@@ -434,28 +434,38 @@ const filtrosQS = filtrosParams.toString();
           cedulaCell?.textContent?.toLowerCase().includes(searchTerm);
 
         // Filter by inactividad (basado en tiempo)
+        // Usar UTC consistentemente para evitar desfases de zona horaria
         let matchesInactividad = true;
-        const today = new Date();
-        const lastDate = rowUltimaAsistencia ? new Date(rowUltimaAsistencia) : null;
+
+        // Obtener fecha actual en UTC (solo fecha, sin hora)
+        const now = new Date();
+        const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+        // Parsear última asistencia en UTC (el data attribute viene de toISOString())
+        let lastDateUTC: Date | null = null;
+        if (rowUltimaAsistencia) {
+          const d = new Date(rowUltimaAsistencia);
+          lastDateUTC = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+        }
 
         if (selectedInactividad === "sin_registro_15") {
-          // No ha venido en los últimos 15 días
-          const fifteenDaysAgo = new Date();
-          fifteenDaysAgo.setDate(today.getDate() - 15);
-          matchesInactividad = !lastDate || lastDate < fifteenDaysAgo;
+          // No ha venido en los últimos 15 días (excluye nunca)
+          const cutoff = new Date(todayUTC);
+          cutoff.setUTCDate(todayUTC.getUTCDate() - 15);
+          matchesInactividad = lastDateUTC !== null && lastDateUTC <= cutoff;
         } else if (selectedInactividad === "sin_registro_30") {
-          // No ha venido en los últimos 30 días
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(today.getDate() - 30);
-          matchesInactividad = !lastDate || lastDate < thirtyDaysAgo;
+          // No ha venido en los últimos 30 días (excluye nunca)
+          const cutoff = new Date(todayUTC);
+          cutoff.setUTCDate(todayUTC.getUTCDate() - 30);
+          matchesInactividad = lastDateUTC !== null && lastDateUTC <= cutoff;
         } else if (selectedInactividad === "sin_registro_60") {
-          // No ha venido en los últimos 60 días
-          const sixtyDaysAgo = new Date();
-          sixtyDaysAgo.setDate(today.getDate() - 60);
-          matchesInactividad = !lastDate || lastDate < sixtyDaysAgo;
+          // No ha venido en los últimos 60 días (excluye nunca)
+          const cutoff = new Date(todayUTC);
+          cutoff.setUTCDate(todayUTC.getUTCDate() - 60);
+          matchesInactividad = lastDateUTC !== null && lastDateUTC <= cutoff;
         } else if (selectedInactividad === "nunca") {
           // Nunca ha asistido
-          matchesInactividad = rowTotalAsistencias === 0;
+          matchesInactividad = lastDateUTC === null;
         }
 
         if (matchesStatus && matchesZona && matchesEquipo && matchesSearch && matchesInactividad) {

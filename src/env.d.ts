@@ -6,5 +6,6 @@ declare namespace App {
       id: string;
       rol: string;
     };
+    csrfToken: string;
   }
 }
