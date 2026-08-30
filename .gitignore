@@ -40,3 +40,7 @@ pnpm-debug.log*
 .claude/
 .openclaude-profile.json
 opencode.json
+.aionrs/
+.codegraph/
+.vercel/
+scratch/
