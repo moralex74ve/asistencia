@@ -136,6 +136,7 @@ const eventos = await prisma.evento.findMany({
         <h2 class="text-2xl font-semibold mb-4">Crear Nuevo Evento</h2>
         <form method="POST" class="space-y-4">
           <input type="hidden" name="intent" value="crear" />
+          <input type="hidden" name="_csrf" value={Astro.locals.csrfToken} />
           <div>
             <label for="nombre" class="block text-sm font-medium mb-1">Nombre del Evento</label>
             <input type="text" id="nombre" name="nombre" required class="text-black input input-bordered w-full" />
@@ -196,6 +197,7 @@ const eventos = await prisma.evento.findMany({
       </div>
       <form method="POST">
         <input type="hidden" name="intent" value="actualizar" />
+        <input type="hidden" name="_csrf" value={Astro.locals.csrfToken} />
         <input type="hidden" id="edit-event-id" name="id" />
         <div class="space-y-4">
           <div>
