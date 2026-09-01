@@ -255,7 +255,7 @@ const datosExportPdf = {
       Agregar Miembros al Evento
     </h2>
 
-    <form method="POST">
+    <form method="POST" id="event-include-form">
       <input type="hidden" name="_csrf" value={Astro.locals.csrfToken} />
       <div
         class="mb-1 flex flex-wrap items-center justify-between lg:gap-3 sm:gap-1 sm:p-2 lg:p-4 bg-base-200 rounded-lg"
@@ -318,6 +318,7 @@ const datosExportPdf = {
           </select>
 
           <button
+            id="event-include-submit-btn"
             type="submit"
             class="inline-block w-full rounded bg-green-600 px-4 py-2 text-xs font-medium text-white hover:bg-green-700 sm:w-auto"
           >
@@ -367,6 +368,9 @@ const datosExportPdf = {
                       type="checkbox"
                       name="miembroIds"
                       value={miembro.id}
+                      data-nombre={miembro.nombre}
+                      data-apellido={miembro.apellido}
+                      data-cedula={miembro.cedula}
                       class="member-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </td>
@@ -480,6 +484,127 @@ const datosExportPdf = {
           )
         }
       </ul>
+    </div>
+  </div>
+
+  <!-- Cédula Completion Modal -->
+  <div
+    id="event-cedula-modal"
+    class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4"
+    style="display: none;"
+  >
+    <div
+      class="bg-slate-800 text-slate-50 rounded-lg shadow-xl p-6 w-full max-w-md mx-auto"
+    >
+      <div
+        class="flex justify-between items-center mb-2 border-b border-slate-600 pb-2"
+      >
+        <h3 class="text-sm lg:text-xl font-bold">Completar Cédula</h3>
+        <button
+          id="cedula-close-modal-btn"
+          type="button"
+          class="text-2xl font-bold p-1 hover:text-red-500">&times;</button
+        >
+      </div>
+      <p id="modal-counter" class="text-xs text-gray-400 mb-1"></p>
+      <p id="modal-cedula-actual" class="text-xs text-gray-400 mb-4"></p>
+
+      <div class="mb-4">
+        <label for="modal-cedula-input" class="block text-sm font-medium text-gray-300 mb-1"
+          >Nueva Cédula</label
+        >
+        <div class="flex gap-2">
+          <input
+            type="text"
+            id="modal-cedula-input"
+            class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+          />
+          <button
+            type="button"
+            id="modal-buscar-cedula-btn"
+            title="Buscar cédula"
+            class="flex-shrink-0 inline-flex items-center justify-center h-10 w-10 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 text-gray-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </button>
+          <button
+            type="button"
+            id="modal-clear-cedula-btn"
+            title="Limpiar cédula"
+            class="flex-shrink-0 inline-flex items-center justify-center h-10 w-10 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 text-gray-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <p
+          id="modal-cedula-status"
+          class="hidden mt-2 text-sm text-gray-600"
+          role="status"
+          aria-live="polite"
+        ></p>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 mb-6">
+        <div>
+          <label for="modal-nombre" class="block text-sm font-medium text-gray-300 mb-1"
+            >Nombre</label
+          >
+          <input
+            type="text"
+            id="modal-nombre"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+          />
+        </div>
+        <div>
+          <label for="modal-apellido" class="block text-sm font-medium text-gray-300 mb-1"
+            >Apellido</label
+          >
+          <input
+            type="text"
+            id="modal-apellido"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+          />
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-4">
+        <button
+          id="cedula-cancel-btn"
+          type="button"
+          class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >Mantener Datos Anteriores</button
+        >
+        <button
+          id="cedula-confirm-btn"
+          type="button"
+          class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+          >Confirmar</button
+        >
+      </div>
     </div>
   </div>
 
@@ -699,6 +824,22 @@ const datosExportPdf = {
       const exportAsistentesPdfBtn = document.getElementById("event-export-asistentes-pdf-btn");
       const backToEventsLink = document.getElementById("back-to-events-link");
 
+      // Cédula completion modal elements
+      const includeForm = document.getElementById("event-include-form") as HTMLFormElement | null;
+      const includeSubmitBtn = document.getElementById("event-include-submit-btn") as HTMLButtonElement | null;
+      const cedulaModal = document.getElementById("event-cedula-modal");
+      const cedulaCloseBtn = document.getElementById("cedula-close-modal-btn") as HTMLElement | null;
+      const cedulaCancelBtn = document.getElementById("cedula-cancel-btn") as HTMLButtonElement | null;
+      const cedulaConfirmBtn = document.getElementById("cedula-confirm-btn") as HTMLButtonElement | null;
+      const modalCounter = document.getElementById("modal-counter");
+      const modalCedulaActual = document.getElementById("modal-cedula-actual");
+      const modalCedulaInput = document.getElementById("modal-cedula-input") as HTMLInputElement | null;
+      const modalBuscarBtn = document.getElementById("modal-buscar-cedula-btn") as HTMLButtonElement | null;
+      const modalClearCedulaBtn = document.getElementById("modal-clear-cedula-btn") as HTMLButtonElement | null;
+      const modalCedulaStatus = document.getElementById("modal-cedula-status") as HTMLParagraphElement | null;
+      const modalNombreInput = document.getElementById("modal-nombre") as HTMLInputElement | null;
+      const modalApellidoInput = document.getElementById("modal-apellido") as HTMLInputElement | null;
+
       if (
         !filterInput ||
         !tableBody ||
@@ -710,7 +851,21 @@ const datosExportPdf = {
         !closeModalBtn ||
         !exportPdfBtn ||
         !exportAsistentesPdfBtn ||
-        !backToEventsLink
+        !backToEventsLink ||
+        !includeForm ||
+        !includeSubmitBtn ||
+        !cedulaModal ||
+        !cedulaCloseBtn ||
+        !cedulaCancelBtn ||
+        !cedulaConfirmBtn ||
+        !modalCounter ||
+        !modalCedulaActual ||
+        !modalCedulaInput ||
+        !modalBuscarBtn ||
+        !modalClearCedulaBtn ||
+        !modalCedulaStatus ||
+        !modalNombreInput ||
+        !modalApellidoInput
       ) {
         return;
       }
@@ -774,6 +929,101 @@ const datosExportPdf = {
       function hideModal() {
         attendeeModal.style.display = "none";
       }
+
+      // --- Flujo de cédula pendiente (kids-* / Pend-*) ---
+      const esCedulaNumerica = (cedula: string): boolean => /^\d/.test(cedula.trim());
+
+      const setModalEstado = (
+        mensaje: string,
+        tipo: "info" | "warn" | "error" = "info",
+      ) => {
+        if (!mensaje) {
+          modalCedulaStatus.textContent = "";
+          modalCedulaStatus.classList.add("hidden");
+          return;
+        }
+        modalCedulaStatus.classList.remove("hidden");
+        modalCedulaStatus.textContent = mensaje;
+        modalCedulaStatus.classList.remove(
+          "text-gray-600",
+          "text-amber-600",
+          "text-red-600",
+        );
+        modalCedulaStatus.classList.add(
+          tipo === "warn"
+            ? "text-amber-600"
+            : tipo === "error"
+              ? "text-red-600"
+              : "text-gray-600",
+        );
+      };
+
+      const capitalizeNombre = (str: string): string => {
+        if (!str) return "";
+        return str
+          .replace(/\s*-\s*$/, "")
+          .trim()
+          .split(" ")
+          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(" ");
+      };
+
+      const lupaSvg =
+        '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>';
+      const spinnerSvg =
+        '<svg class="animate-spin h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>';
+
+      interface PendienteCola {
+        id: string;
+        nombre: string;
+        apellido: string;
+        cedula: string;
+      }
+
+      let colaPendientes: PendienteCola[] = [];
+      let indiceCola = 0;
+      let algoCambio = false;
+
+      const mostrarModalCedula = () => {
+        cedulaModal.style.display = "flex";
+        modalCedulaInput.focus();
+      };
+
+      const ocultarModalCedula = () => {
+        cedulaModal.style.display = "none";
+      };
+
+      const abrirPendienteActual = () => {
+        const pendiente = colaPendientes[indiceCola];
+        if (!pendiente) return;
+        modalCounter.textContent = `Persona ${indiceCola + 1} de ${colaPendientes.length}`;
+        modalCedulaActual.textContent = `Cédula actual: ${pendiente.cedula}`;
+        modalCedulaInput.value = "";
+        modalNombreInput.value = pendiente.nombre;
+        modalApellidoInput.value = pendiente.apellido;
+        setModalEstado("");
+        mostrarModalCedula();
+      };
+
+      const avanzarCola = () => {
+        ocultarModalCedula();
+        indiceCola++;
+        if (indiceCola < colaPendientes.length) {
+          abrirPendienteActual();
+        } else {
+          terminarCola();
+        }
+      };
+
+      const terminarCola = () => {
+        ocultarModalCedula();
+        colaPendientes = [];
+        indiceCola = 0;
+        includeSubmitBtn.disabled = false;
+        if (algoCambio) {
+          window.location.reload();
+        }
+      };
 
       function handleBackToEvents(e: MouseEvent) {
         const memberCheckboxes = document.querySelectorAll(
@@ -849,6 +1099,233 @@ const datosExportPdf = {
               alert("Error al eliminar");
             }
           });
+        });
+
+        // Inclusión con validación de cédula: interceptar el envío cuando
+        // algún seleccionado tiene cédula que no empieza con número (kids-* / Pend-*)
+        includeForm.addEventListener("submit", (e) => {
+          const checkboxes = Array.from(
+            document.querySelectorAll<HTMLInputElement>(".member-checkbox:checked"),
+          );
+          const numericos = checkboxes.filter((cb) => esCedulaNumerica(cb.dataset.cedula || ""));
+          const pendientes = checkboxes.filter(
+            (cb) => !esCedulaNumerica(cb.dataset.cedula || ""),
+          );
+
+          // Todas las cédulas numéricas: envío normal (comportamiento actual)
+          if (pendientes.length === 0) return;
+
+          e.preventDefault();
+          includeSubmitBtn.disabled = true;
+
+          colaPendientes = pendientes.map((cb) => ({
+            id: cb.value,
+            nombre: cb.dataset.nombre || "",
+            apellido: cb.dataset.apellido || "",
+            cedula: cb.dataset.cedula || "",
+          }));
+          indiceCola = 0;
+          algoCambio = numericos.length > 0;
+
+          (async () => {
+            // 1. Incluir de inmediato los seleccionados con cédula numérica
+            if (numericos.length > 0) {
+              const fd = new FormData();
+              const csrfInput = includeForm.querySelector(
+                'input[name="_csrf"]',
+              ) as HTMLInputElement | null;
+              if (csrfInput) fd.append("_csrf", csrfInput.value);
+              numericos.forEach((cb) => fd.append("miembroIds", cb.value));
+              try {
+                await fetch(window.location.pathname, { method: "POST", body: fd });
+              } catch (error) {
+                console.error("Error al incluir miembros seleccionados:", error);
+              }
+            }
+
+            // 2. Procesar uno a uno los pendientes (kids-* / Pend-*)
+            if (colaPendientes.length > 0) {
+              abrirPendienteActual();
+            } else {
+              terminarCola();
+            }
+          })();
+        });
+
+        // Limpiar el campo Nueva Cédula (X)
+        modalClearCedulaBtn.addEventListener("click", () => {
+          modalCedulaInput.value = "";
+          modalCedulaInput.focus();
+        });
+
+        // Lupa: verificar en BD y luego en la página externa (mismo proceso que /crear)
+        modalBuscarBtn.addEventListener("click", async () => {
+          const cedula = modalCedulaInput.value.trim();
+          if (!cedula) {
+            alert("Ingrese una cédula para buscar.");
+            return;
+          }
+
+          modalBuscarBtn.disabled = true;
+          modalBuscarBtn.innerHTML = spinnerSvg;
+
+          // Aviso diferido: si la API externa sigue sin responder, explicar el arranque en frío
+          const avisoTardio = setTimeout(() => {
+            setModalEstado(
+              "El servicio del registro civil está despertando; la primera consulta puede tardar hasta un minuto.",
+              "warn",
+            );
+          }, 8000);
+          setModalEstado("Consultando el registro civil…");
+
+          try {
+            const pendiente = colaPendientes[indiceCola];
+            const excludeId = pendiente ? pendiente.id : "";
+
+            // 1. Verificar si la cédula ya existe en la BD
+            const checkRes = await fetch(
+              `/api/miembros/check-cedula?cedula=${encodeURIComponent(cedula)}&excludeId=${encodeURIComponent(excludeId)}`,
+              { signal: AbortSignal.timeout(15000) },
+            );
+            const checkData = await checkRes.json();
+
+            if (checkData.exists) {
+              setModalEstado("Esta cédula ya está registrada en el sistema.", "error");
+              return;
+            }
+
+            // 2. Buscar en la página externa (registro civil)
+            const apiRes = await fetch(
+              `https://scrapi-cedula.onrender.com/api/verificar?cedula=${encodeURIComponent(cedula)}`,
+              { signal: AbortSignal.timeout(90000) },
+            );
+            if (!apiRes.ok) {
+              setModalEstado("Cédula no encontrada en el registro civil.", "warn");
+              return;
+            }
+
+            const apiData = await apiRes.json();
+
+            // 3. Rellenar nombre y apellido con texto capitalizado
+            if (apiData.nombres) {
+              modalNombreInput.value = capitalizeNombre(apiData.nombres);
+            }
+            if (apiData.primer_apellido) {
+              const segundo = apiData.segundo_apellido
+                ? ` ${capitalizeNombre(apiData.segundo_apellido)}`
+                : "";
+              modalApellidoInput.value =
+                capitalizeNombre(apiData.primer_apellido) + segundo;
+            }
+            setModalEstado("Datos encontrados. Verifique y confirme.", "info");
+          } catch (error) {
+            console.error("Error al buscar cédula:", error);
+            const errName = (error as DOMException)?.name;
+            if (errName === "TimeoutError" || errName === "AbortError") {
+              setModalEstado(
+                "La consulta tardó demasiado y fue cancelada. El servicio del registro civil no respondió; intenta de nuevo en un momento.",
+                "error",
+              );
+            } else {
+              setModalEstado("Error al consultar la cédula. Intente nuevamente.", "error");
+            }
+          } finally {
+            clearTimeout(avisoTardio);
+            modalBuscarBtn.disabled = false;
+            modalBuscarBtn.innerHTML = lupaSvg;
+          }
+        });
+
+        // Enviar la inclusión del miembro en el evento con los datos indicados
+        const incluirConDatos = async (
+          miembroId: string,
+          cedula: string,
+          nombre: string,
+          apellido: string,
+        ): Promise<boolean> => {
+          cedulaConfirmBtn.disabled = true;
+          cedulaCancelBtn.disabled = true;
+          try {
+            const res = await fetch(
+              `/api/eventos/${window.location.pathname.split("/")[2] || ""}/incluir-miembro`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ miembroId, cedula, nombre, apellido }),
+              },
+            );
+            const data = (await res.json().catch(() => ({}))) as {
+              ok?: boolean;
+              message?: string;
+            };
+
+            if (res.ok) {
+              algoCambio = true;
+              avanzarCola();
+              return true;
+            }
+            if (res.status === 401) {
+              window.location.href = "/login";
+              return false;
+            }
+            setModalEstado(
+              data.message || "Error al guardar. Intente nuevamente.",
+              "error",
+            );
+            return false;
+          } catch (error) {
+            console.error("Error al confirmar:", error);
+            setModalEstado("Error de conexión al guardar. Intente nuevamente.", "error");
+            return false;
+          } finally {
+            cedulaConfirmBtn.disabled = false;
+            cedulaCancelBtn.disabled = false;
+          }
+        };
+
+        // Confirmar: guardar cédula/nombre/apellido ingresados (o conservar la cédula actual si no hubo cambio) e incluir
+        cedulaConfirmBtn.addEventListener("click", async () => {
+          const pendiente = colaPendientes[indiceCola];
+          if (!pendiente) return;
+
+          const cedulaNueva = modalCedulaInput.value.trim();
+          const sinCambio = !cedulaNueva || cedulaNueva === pendiente.cedula;
+          // Sin cambios (o cédula vacía): conservar la cédula actual del registro
+          const cedula = sinCambio ? pendiente.cedula : cedulaNueva;
+          const nombre = modalNombreInput.value.trim();
+          const apellido = modalApellidoInput.value.trim();
+
+          if (!nombre || !apellido) {
+            setModalEstado("Debe completar el nombre y el apellido.", "error");
+            return;
+          }
+          if (!sinCambio && !esCedulaNumerica(cedula)) {
+            setModalEstado("La cédula debe comenzar con un número.", "error");
+            return;
+          }
+
+          await incluirConDatos(pendiente.id, cedula, nombre, apellido);
+        });
+
+        // Mantener Datos Anteriores: restaurar los campos con los datos originales
+        // de la BD (cédula, nombre, apellido) y dejar que el usuario decida:
+        // probar otra cédula con la lupa o Confirmar con estos datos.
+        cedulaCancelBtn.addEventListener("click", () => {
+          const pendiente = colaPendientes[indiceCola];
+          if (!pendiente) return;
+
+          modalCedulaInput.value = pendiente.cedula;
+          modalNombreInput.value = pendiente.nombre;
+          modalApellidoInput.value = pendiente.apellido;
+          setModalEstado("Datos restaurados desde la base de datos. Puede probar otra cédula o confirmar.", "info");
+          modalCedulaInput.focus();
+        });
+
+        // Cerrar (X) o clic fuera: omitir a este pendiente sin incluirlo
+        const omitirPendiente = () => avanzarCola();
+        cedulaCloseBtn.addEventListener("click", omitirPendiente);
+        cedulaModal.addEventListener("click", (e) => {
+          if (e.target === cedulaModal) omitirPendiente();
         });
 
         showAttendeesBtn.dataset.initialized = "true";
