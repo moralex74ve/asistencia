@@ -59,6 +59,7 @@ const datosExportPdf = {
   totalAsistentes: miembrosEnAsistencia.length,
   totalLlegados: miembrosEnAsistencia.filter((a) => a.hora_llegada).length,
   totalNinos: ninos.length,
+  totalAdultos: adultos.length,
   totalHombresAdultos: adultos.filter((a) => generoDe(a) === "M").length,
   totalMujeresAdultas: adultos.filter((a) => generoDe(a) === "F").length,
   totalNinosHombres: ninos.filter((a) => generoDe(a) === "M").length,
@@ -341,7 +342,7 @@ const datosExportPdf = {
       doc.setTextColor(20);
       doc.text(`Total de asistentes: ${exportData.totalAsistentes}`, 14, 31);
       doc.text(`Total de llegados: ${exportData.totalLlegados}`, 14, 37);
-      doc.text(`Total de niños: ${exportData.totalNinos}`, 14, 43);
+      doc.text(`Total de niños: ${exportData.totalNinos}  |  Total de adultos: ${exportData.totalAdultos}`, 14, 43);
       doc.text(
         `Adultos - Hombres (M): ${exportData.totalHombresAdultos} | Mujeres (F): ${exportData.totalMujeresAdultas}`,
         14,

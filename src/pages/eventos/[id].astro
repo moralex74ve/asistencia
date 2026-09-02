@@ -50,6 +50,7 @@ const [evento, miembrosEnAsistencia, todasZonas] = await Promise.all([
           cedula: true,
           telef: true,
           genero: true,
+          kids: true,
           zonas: true,
           equipo: true,
         },
@@ -86,8 +87,9 @@ const miembros = await prisma.miembros.findMany({
 const zonaIdsEnLista = [...new Set(miembros.map((m) => m.zona_id))];
 const zonas = todasZonas.filter((z) => zonaIdsEnLista.includes(z.id));
 
-const esNino = (a: { miembros: { cedula: string } }) =>
-  a.miembros.cedula.toLowerCase().startsWith("kids-");
+// Niño/a = campo `kids` verdadero (el género en `genero` define niño o niña)
+const esNino = (a: { miembros: { kids: boolean | null } }) =>
+  a.miembros.kids === true;
 const adultos = miembrosEnAsistencia.filter((a) => !esNino(a));
 const ninos = miembrosEnAsistencia.filter((a) => esNino(a));
 const generoDe = (a: { miembros: { genero: string | null } }) =>
@@ -98,6 +100,7 @@ const datosExportPdf = {
   eventoNombre: evento.nombre,
   totalAsistentes: miembrosEnAsistencia.length,
   totalNinos: ninos.length,
+  totalAdultos: adultos.length,
   totalHombresAdultos: adultos.filter((a) => generoDe(a) === "M").length,
   totalMujeresAdultas: adultos.filter((a) => generoDe(a) === "F").length,
   totalNinosHombres: ninos.filter((a) => generoDe(a) === "M").length,
@@ -124,6 +127,20 @@ const datosExportPdf = {
     nombre: `${a.miembros.nombre} ${a.miembros.apellido}`,
     cedula: a.miembros.cedula,
     telef: a.miembros.telef || "",
+  })),
+  asistentesAdultos: adultos.map((a) => ({
+    nombre: `${a.miembros.nombre} ${a.miembros.apellido}`,
+    cedula: a.miembros.cedula,
+    telef: a.miembros.telef || "",
+    zona: a.miembros.zonas?.nombre_zona || "",
+    equipo: a.miembros.equipo?.des_equipo || "",
+  })),
+  asistentesNinos: ninos.map((a) => ({
+    nombre: `${a.miembros.nombre} ${a.miembros.apellido}`,
+    cedula: a.miembros.cedula,
+    telef: a.miembros.telef || "",
+    zona: a.miembros.zonas?.nombre_zona || "",
+    equipo: a.miembros.equipo?.des_equipo || "",
   })),
 };
 ---
@@ -158,6 +175,14 @@ const datosExportPdf = {
         id="attendee-count"
         class="bg-blue-900 text-blue-200 text-sm font-bold px-2.5 py-0.5 rounded-full"
         >{miembrosEnAsistencia.length}</span
+      >
+      <span
+        class="bg-purple-900 text-purple-200 text-sm font-bold px-2.5 py-0.5 rounded-full"
+        >Niños: {ninos.length}</span
+      >
+      <span
+        class="bg-emerald-900 text-emerald-200 text-sm font-bold px-2.5 py-0.5 rounded-full"
+        >Adultos: {adultos.length}</span
       >
       <a
         href={`/crear?redirect=/eventos/${eventoId}`}
@@ -646,6 +671,38 @@ const datosExportPdf = {
         );
       };
 
+      const asistenteFila = (a: {
+        nombre: string;
+        cedula: string;
+        telef: string;
+        zona: string;
+        equipo: string;
+      }) => [
+        a.nombre,
+        a.cedula.toLowerCase().startsWith("pend-") ? "__________" : a.cedula,
+        a.telef,
+        a.zona,
+        a.equipo,
+      ];
+
+      const repintarPendientes = (data: any) => {
+        if (data.column.index === 1) {
+          const cedula = String(data.cell.raw || "").toLowerCase();
+          if (cedula.startsWith("pend-")) {
+            data.cell.styles.fillColor = [255, 233, 233];
+            data.cell.styles.fontStyle = "bold";
+            data.cell.styles.textColor = [150, 0, 0];
+            data.cell.styles.lineWidth = 0.5;
+            data.cell.styles.lineColor = [200, 0, 0];
+          }
+        }
+      };
+
+      const ultimaY = () =>
+        (
+          doc as unknown as { lastAutoTable?: { finalY?: number } }
+        ).lastAutoTable?.finalY ?? 50;
+
       doc.setFontSize(16);
       doc.setTextColor(20);
       doc.text(`Listado de Asistentes - ${exportData.eventoNombre}`, 14, 16);
@@ -657,10 +714,15 @@ const datosExportPdf = {
         22,
       );
 
+      // --- ESTADÍSTICAS (arriba, como antes) ---
       doc.setFontSize(12);
       doc.setTextColor(20);
       doc.text(`Total de asistentes: ${exportData.totalAsistentes}`, 14, 31);
-      doc.text(`Total de niños: ${exportData.totalNinos}`, 14, 37);
+      doc.text(
+        `Total de niños: ${exportData.totalNinos}  |  Total de adultos: ${exportData.totalAdultos}`,
+        14,
+        37,
+      );
       doc.text(
         `Adultos - Hombres (M): ${exportData.totalHombresAdultos} | Mujeres (F): ${exportData.totalMujeresAdultas}`,
         14,
@@ -672,41 +734,51 @@ const datosExportPdf = {
         49,
       );
 
+      // --- ADULTOS (sin título) ---
       autoTable(doc, {
         startY: 62,
         head: [["Nombre y Apellido", "Cédula", "Teléfono", "Zona", "Equipo"]],
-        body: exportData.asistentes.map(
-          (a: {
-            nombre: string;
-            cedula: string;
-            telef: string;
-            zona: string;
-            equipo: string;
-          }) => [a.nombre, a.cedula.toLowerCase().startsWith("pend-") ? "__________" : a.cedula, a.telef, a.zona, a.equipo],
-        ),
+        body: exportData.asistentesAdultos.map(asistenteFila),
         styles: { fontSize: 9 },
         headStyles: { fillColor: [31, 41, 55], textColor: 255, halign: "left" },
         alternateRowStyles: { fillColor: [243, 244, 246] },
-        didDrawCell: (data: any) => {
-          if (data.column.index === 1) {
-            const cedula = String(data.cell.raw || "").toLowerCase();
-            if (cedula.startsWith("pend-")) {
-              data.cell.styles.fillColor = [255, 233, 233];
-              data.cell.styles.fontStyle = "bold";
-              data.cell.styles.textColor = [150, 0, 0];
-              data.cell.styles.lineWidth = 0.5;
-              data.cell.styles.lineColor = [200, 0, 0];
-            }
-          }
-        },
+        didDrawCell: repintarPendientes,
         didDrawPage: addPageNumber,
       });
 
-      const lastAutoTable = (
-        doc as unknown as { lastAutoTable?: { finalY?: number } }
-      ).lastAutoTable;
-      const teamSectionY = (lastAutoTable?.finalY ?? 50) + 12;
+      // --- NIÑOS EN EL EVENTO ---
+      let ninosSectionY = ultimaY() + 12;
+      if (ninosSectionY > pageHeight - 30) {
+        doc.addPage();
+        ninosSectionY = 22;
+      }
+      doc.setFontSize(13);
+      doc.setTextColor(20);
+      doc.text("Niños en el Evento", 14, ninosSectionY);
 
+      if (exportData.asistentesNinos.length > 0) {
+        autoTable(doc, {
+          startY: ninosSectionY + 4,
+          head: [["Nombre y Apellido", "Cédula", "Teléfono", "Zona", "Equipo"]],
+          body: exportData.asistentesNinos.map(asistenteFila),
+          styles: { fontSize: 9 },
+          headStyles: { fillColor: [31, 41, 55], textColor: 255, halign: "left" },
+          alternateRowStyles: { fillColor: [243, 244, 246] },
+          didDrawCell: repintarPendientes,
+          didDrawPage: addPageNumber,
+        });
+      } else {
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text("No hay niños registrados en este evento.", 14, ninosSectionY + 5);
+      }
+
+      // --- ESTADÍSTICAS POR GRUPO ---
+      let teamSectionY = ultimaY() + 14;
+      if (teamSectionY > pageHeight - 40) {
+        doc.addPage();
+        teamSectionY = 22;
+      }
       doc.setFontSize(12);
       doc.setTextColor(20);
       doc.text("Asistentes por Equipo", 14, teamSectionY);
@@ -932,6 +1004,9 @@ const datosExportPdf = {
 
       // --- Flujo de cédula pendiente (kids-* / Pend-*) ---
       const esCedulaNumerica = (cedula: string): boolean => /^\d/.test(cedula.trim());
+      // Solo las cédulas con "Pend-" (contenido) disparan el modal de completar cédula
+      const esPendiente = (cedula: string): boolean =>
+        cedula.toLowerCase().includes("pend-");
 
       const setModalEstado = (
         mensaje: string,
@@ -1102,17 +1177,19 @@ const datosExportPdf = {
         });
 
         // Inclusión con validación de cédula: interceptar el envío cuando
-        // algún seleccionado tiene cédula que no empieza con número (kids-* / Pend-*)
+        // algún seleccionado tiene cédula con contenido "Pend-"
         includeForm.addEventListener("submit", (e) => {
           const checkboxes = Array.from(
             document.querySelectorAll<HTMLInputElement>(".member-checkbox:checked"),
           );
-          const numericos = checkboxes.filter((cb) => esCedulaNumerica(cb.dataset.cedula || ""));
+          const directos = checkboxes.filter(
+            (cb) => !esPendiente(cb.dataset.cedula || ""),
+          );
           const pendientes = checkboxes.filter(
-            (cb) => !esCedulaNumerica(cb.dataset.cedula || ""),
+            (cb) => esPendiente(cb.dataset.cedula || ""),
           );
 
-          // Todas las cédulas numéricas: envío normal (comportamiento actual)
+          // Sin cédulas Pend-: envío normal
           if (pendientes.length === 0) return;
 
           e.preventDefault();
@@ -1125,17 +1202,17 @@ const datosExportPdf = {
             cedula: cb.dataset.cedula || "",
           }));
           indiceCola = 0;
-          algoCambio = numericos.length > 0;
+          algoCambio = directos.length > 0;
 
           (async () => {
-            // 1. Incluir de inmediato los seleccionados con cédula numérica
-            if (numericos.length > 0) {
+            // 1. Incluir de inmediato los seleccionados sin cédula Pend- (numéricas y kids-*)
+            if (directos.length > 0) {
               const fd = new FormData();
               const csrfInput = includeForm.querySelector(
                 'input[name="_csrf"]',
               ) as HTMLInputElement | null;
               if (csrfInput) fd.append("_csrf", csrfInput.value);
-              numericos.forEach((cb) => fd.append("miembroIds", cb.value));
+              directos.forEach((cb) => fd.append("miembroIds", cb.value));
               try {
                 await fetch(window.location.pathname, { method: "POST", body: fd });
               } catch (error) {
@@ -1143,7 +1220,7 @@ const datosExportPdf = {
               }
             }
 
-            // 2. Procesar uno a uno los pendientes (kids-* / Pend-*)
+            // 2. Procesar uno a uno los pendientes (cédulas con Pend-)
             if (colaPendientes.length > 0) {
               abrirPendienteActual();
             } else {
