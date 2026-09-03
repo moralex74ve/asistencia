@@ -132,6 +132,11 @@ if (Astro.request.method === "POST") {
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
+            <button type="button" id="restore-datos-btn" title="Restaurar datos originales" class="mt-1 flex-shrink-0 inline-flex items-center justify-center h-10 w-10 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+              </svg>
+            </button>
           </div>
           <p id="cedula-status" class="hidden mt-2 text-sm text-gray-600" role="status" aria-live="polite"></p>
         </div>
@@ -228,6 +233,23 @@ if (Astro.request.method === "POST") {
   </div>
 </Layout>
 
+<script is:inline id="edit-original-data" type="application/json" set:html={JSON.stringify({
+  nombre: miembro.nombre,
+  apellido: miembro.apellido,
+  cedula: miembro.cedula,
+  direccion: miembro.direccion,
+  telef: miembro.telef,
+  telf_2: miembro.telf_2,
+  status: miembro.status,
+  zona_id: miembro.zona_id,
+  equipo_id: miembro.equipo_id ?? '',
+  discipulado: miembro.discipulado,
+  bautizado: miembro.bautizado,
+  genero: miembro.genero,
+  kids: miembro.kids,
+  pendiente: isPendiente,
+})} />
+
 <script>
   document.addEventListener('astro:page-load', () => {
     const kidCheckbox = document.getElementById('kids') as HTMLInputElement;
@@ -235,11 +257,18 @@ if (Astro.request.method === "POST") {
     const cedulaInput = document.getElementById('cedula') as HTMLInputElement;
     const buscarBtn = document.getElementById('buscar-cedula-btn') as HTMLButtonElement;
     const clearCedulaBtn = document.getElementById('clear-cedula-btn') as HTMLButtonElement;
+    const restoreBtn = document.getElementById('restore-datos-btn') as HTMLButtonElement;
     const nombreInput = document.getElementById('nombre') as HTMLInputElement;
     const apellidoInput = document.getElementById('apellido') as HTMLInputElement;
+    const zonaSelect = document.getElementById('zonaId') as HTMLSelectElement;
     const equipoSelect = document.getElementById('equipoId') as HTMLSelectElement;
     const discipuladoSelect = document.getElementById('discipulado') as HTMLSelectElement;
     const bautizadoCheckbox = document.getElementById('bautizado') as HTMLInputElement;
+    const direccionInput = document.getElementById('direccion') as HTMLTextAreaElement;
+    const telefInput = document.getElementById('telef') as HTMLInputElement;
+    const telf2Input = document.getElementById('telf_2') as HTMLInputElement;
+    const statusCheckbox = document.getElementById('status') as HTMLInputElement;
+    const generoRadios = document.querySelectorAll<HTMLInputElement>('input[name="genero"]');
     const cedulaStatus = document.getElementById('cedula-status') as HTMLParagraphElement;
 
     const setEstado = (mensaje: string, tipo: 'info' | 'warn' | 'error' = 'info') => {
@@ -270,6 +299,38 @@ if (Astro.request.method === "POST") {
       clearCedulaBtn.dataset.initialized = 'true';
     }
 
+    // Restaurar datos originales de la BD (equivalente a "Mantener Datos Anteriores" del modal)
+    if (restoreBtn && !restoreBtn.dataset.initialized) {
+      restoreBtn.addEventListener('click', () => {
+        const originalEl = document.getElementById('edit-original-data') as HTMLScriptElement | null;
+        if (!originalEl || !originalEl.textContent) return;
+        let original: any = null;
+        try {
+          original = JSON.parse(originalEl.textContent);
+        } catch {
+          return;
+        }
+        if (!original) return;
+
+        if (cedulaInput) cedulaInput.value = original.cedula ?? '';
+        if (nombreInput) nombreInput.value = original.nombre ?? '';
+        if (apellidoInput) apellidoInput.value = original.apellido ?? '';
+        if (kidCheckbox) kidCheckbox.checked = !!original.kids;
+        if (pendienteCheckbox) pendienteCheckbox.checked = !!original.pendiente;
+        if (zonaSelect) zonaSelect.value = original.zona_id ?? '';
+        if (equipoSelect) equipoSelect.value = original.equipo_id ?? '';
+        if (discipuladoSelect) discipuladoSelect.value = original.discipulado ?? '';
+        if (bautizadoCheckbox) bautizadoCheckbox.checked = !!original.bautizado;
+        if (generoRadios) generoRadios.forEach((r) => { r.checked = r.value === original.genero; });
+        if (direccionInput) direccionInput.value = original.direccion ?? '';
+        if (telefInput) telefInput.value = original.telef ?? '';
+        if (telf2Input) telf2Input.value = original.telf_2 ?? '';
+        if (statusCheckbox) statusCheckbox.checked = !!original.status;
+        setEstado('Datos restaurados desde la base de datos.', 'info');
+      });
+      restoreBtn.dataset.initialized = 'true';
+    }
+
     if (buscarBtn && cedulaInput && !buscarBtn.dataset.initialized) {
       buscarBtn.addEventListener('click', async () => {
         const cedula = cedulaInput.value.trim();
@@ -282,8 +343,9 @@ if (Astro.request.method === "POST") {
         buscarBtn.innerHTML = '<svg class="animate-spin h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>';
 
         // Aviso diferido: si la API externa sigue sin responder, explicar el arranque en frío
+        let conservarMensaje = false;
         const avisoTardio = setTimeout(() => {
-          setEstado('El servicio del registro civil está despertando; la primera consulta puede tardar hasta un minuto.', 'warn');
+          setEstado('Iniciando el servicio Un Momento...', 'warn');
         }, 8000);
         setEstado('Consultando el registro civil…');
 
@@ -298,7 +360,8 @@ if (Astro.request.method === "POST") {
 
           const apiRes = await fetch(`https://scrapi-cedula.onrender.com/api/verificar?cedula=${encodeURIComponent(cedula)}`, { signal: AbortSignal.timeout(90000) });
           if (!apiRes.ok) {
-            alert('Cédula no encontrada en el registro civil.');
+            conservarMensaje = true;
+            setEstado('Cedula no Encontrada', 'warn');
             return;
           }
 
@@ -332,7 +395,7 @@ if (Astro.request.method === "POST") {
           }
         } finally {
           clearTimeout(avisoTardio);
-          setEstado('');
+          if (!conservarMensaje) setEstado('');
           buscarBtn.disabled = false;
           buscarBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>';
         }

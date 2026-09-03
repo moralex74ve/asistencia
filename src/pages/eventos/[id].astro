@@ -1249,7 +1249,7 @@ const datosExportPdf = {
           // Aviso diferido: si la API externa sigue sin responder, explicar el arranque en frío
           const avisoTardio = setTimeout(() => {
             setModalEstado(
-              "El servicio del registro civil está despertando; la primera consulta puede tardar hasta un minuto.",
+              "Iniciando el servicio Un Momento...",
               "warn",
             );
           }, 8000);
@@ -1277,7 +1277,7 @@ const datosExportPdf = {
               { signal: AbortSignal.timeout(90000) },
             );
             if (!apiRes.ok) {
-              setModalEstado("Cédula no encontrada en el registro civil.", "warn");
+              setModalEstado("Cedula no Encontrada", "warn");
               return;
             }
 
