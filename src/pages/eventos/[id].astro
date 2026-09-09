@@ -281,6 +281,25 @@ const datosExportPdf = {
             </svg>
             Listado de Asistentes
           </button>
+          <button
+            id="event-menu-show-ninos"
+            type="button"
+            class="flex items-center gap-2 w-full px-4 py-2 text-left text-xs lg:text-sm hover:bg-slate-700 rounded-md"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                clip-rule="evenodd"
+              ></path>
+            </svg>
+            Ver Niños Incluidos
+          </button>
           <a
             href={`/eventos/${eventoId}/llegadas`}
             class="flex items-center gap-2 w-full px-4 py-2 text-xs lg:text-sm hover:bg-slate-700 rounded-md"
@@ -370,6 +389,25 @@ const datosExportPdf = {
             d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
             clip-rule="evenodd"></path>
         </svg>
+      </button>
+      <button
+        id="event-show-ninos-btn"
+        type="button"
+        title="Ver lista de niños(as)"
+        class="inline-flex items-center gap-1.5 rounded-lg bg-purple-700 hover:bg-purple-600 px-3 py-2 text-xs font-medium text-white"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+            clip-rule="evenodd"></path>
+        </svg>
+        <span class="hidden sm:inline">Ver Niños(as)</span>
       </button>
       <button
         id="event-export-pdf-btn"
@@ -657,6 +695,58 @@ const datosExportPdf = {
           miembrosEnAsistencia.length === 0 && (
             <li id="no-attendees-msg" class="text-gray-400 text-center p-4">
               Aún no hay miembros en este evento.
+            </li>
+          )
+        }
+      </ul>
+    </div>
+  </div>
+
+  <!-- Niños(as) List Modal -->
+  <div
+    id="event-ninos-modal"
+    class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4"
+    style="display: none;"
+  >
+    <div
+      class="bg-slate-800 text-slate-50 rounded-lg shadow-xl p-6 w-full max-w-md mx-auto"
+    >
+      <div
+        class="flex justify-between items-center mb-4 border-b border-slate-600 pb-2"
+      >
+        <h3 class="text-sm lg:text-xl font-bold">Niños(as) en el Evento</h3>
+        <button
+          id="event-close-ninos-modal-btn"
+          type="button"
+          class="text-2xl font-bold p-1 hover:text-red-500">&times;</button
+        >
+      </div>
+      <p class="text-xs text-gray-400 mb-2">Total de niños(as): {ninos.length}</p>
+      <ul id="ninos-list" class="space-y-2 max-h-96 overflow-y-auto">
+        {
+          ninos.map((asistencia) => (
+            <li class="bg-slate-700 p-3 rounded-md text-xs lg:text-md flex justify-between items-center">
+              <div class="flex flex-col min-w-0">
+                <span class="truncate">
+                  {asistencia.miembros.nombre} {asistencia.miembros.apellido}
+                </span>
+                {asistencia.hora_llegada && (
+                  <span class="text-green-400 text-xs">
+                    Llegó:{" "}
+                    {new Date(asistencia.hora_llegada).toLocaleTimeString(
+                      "es-ES",
+                      { hour: "2-digit", minute: "2-digit" },
+                    )}
+                  </span>
+                )}
+              </div>
+            </li>
+          ))
+        }
+        {
+          ninos.length === 0 && (
+            <li id="no-ninos-msg" class="text-gray-400 text-center p-4">
+              No hay niños(as) en este evento.
             </li>
           )
         }
@@ -1050,6 +1140,10 @@ const datosExportPdf = {
       const menuShowAttendeesBtn = document.getElementById("event-menu-show-attendees") as HTMLButtonElement | null;
       const menuExportPdfBtn = document.getElementById("event-menu-export-pdf") as HTMLButtonElement | null;
       const menuExportAsistentesBtn = document.getElementById("event-menu-export-asistentes") as HTMLButtonElement | null;
+      const menuShowNinosBtn = document.getElementById("event-menu-show-ninos") as HTMLButtonElement | null;
+      const showNinosBtn = document.getElementById("event-show-ninos-btn") as HTMLButtonElement | null;
+      const ninosModal = document.getElementById("event-ninos-modal");
+      const closeNinosModalBtn = document.getElementById("event-close-ninos-modal-btn");
 
       const exportPdfBtn = document.getElementById("event-export-pdf-btn");
       const exportAsistentesPdfBtn = document.getElementById("event-export-asistentes-pdf-btn");
@@ -1103,7 +1197,11 @@ const datosExportPdf = {
         !actionsMenu ||
         !menuShowAttendeesBtn ||
         !menuExportPdfBtn ||
-        !menuExportAsistentesBtn
+        !menuExportAsistentesBtn ||
+        !menuShowNinosBtn ||
+        !showNinosBtn ||
+        !ninosModal ||
+        !closeNinosModalBtn
       ) {
         return;
       }
@@ -1166,6 +1264,14 @@ const datosExportPdf = {
 
       function hideModal() {
         attendeeModal.style.display = "none";
+      }
+
+      function showNinosModal() {
+        ninosModal.style.display = "flex";
+      }
+
+      function hideNinosModal() {
+        ninosModal.style.display = "none";
       }
 
       // --- Flujo de cédula pendiente (kids-* / Pend-*) ---
@@ -1310,6 +1416,14 @@ const datosExportPdf = {
           }
         });
 
+        showNinosBtn.addEventListener("click", showNinosModal);
+        closeNinosModalBtn.addEventListener("click", hideNinosModal);
+        ninosModal.addEventListener("click", (e) => {
+          if (e.target === ninosModal) {
+            hideNinosModal();
+          }
+        });
+
         // Small-screen actions menu: abrir/cerrar y disparar las mismas acciones
         const abrirMenu = () => {
           actionsMenu.classList.remove("hidden");
@@ -1340,6 +1454,10 @@ const datosExportPdf = {
         menuExportAsistentesBtn.addEventListener("click", () => {
           cerrarMenu();
           exportAsistentesPdf();
+        });
+        menuShowNinosBtn.addEventListener("click", () => {
+          cerrarMenu();
+          showNinosModal();
         });
 
         // Cerrar el menú al pulsar fuera
